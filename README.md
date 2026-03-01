@@ -17,13 +17,69 @@ Just you and the API, trading phrases.
 ## Install
 
 ```bash
-# not yet on NuGet — clone and run locally for now
-dotnet run --project src/ScatMan.Cli -- <command>
+dotnet tool install --global ScatMan.Cli
 ```
 
 ---
 
-## What works
+## Commands
+
+### `types` — list all public types in a package
+
+```bash
+scatman types <package> <version> [--namespace <ns>]
+```
+
+```bash
+scatman types NAudio.Wasapi 2.2.1 --namespace NAudio.CoreAudioApi
+```
+
+```
+NAudio.Wasapi 2.2.1 [NAudio.CoreAudioApi] — 38 public type(s)
+
+NAudio.CoreAudioApi
+  class      AudioClient
+  class      AudioCaptureClient
+  class      AudioEndpointVolume
+  class      MMDevice
+  class      MMDeviceEnumerator
+  class      WasapiCapture
+  class      WasapiOut
+  enum       AudioClientShareMode
+  interface  IAudioSessionEventsHandler
+  ...
+```
+
+---
+
+### `members` — list public members of a type
+
+```bash
+scatman members <package> <version> <typeName>
+```
+
+```bash
+scatman members NAudio.Wasapi 2.2.1 NAudio.CoreAudioApi.WasapiCapture
+```
+
+```
+NAudio.CoreAudioApi.WasapiCapture — 9 public member(s)
+
+events
+  event EventHandler<StoppedEventArgs> RecordingStopped
+
+methods
+  void Dispose()
+  void StartRecording()
+  void StopRecording()
+
+properties
+  bool IsWaveFormatSupported(WaveFormat waveFormat)
+  MMDevice MmDevice { get; }
+  WaveFormat WaveFormat { get; set; }
+```
+
+---
 
 ### `ctors` — list constructors of a type
 
@@ -40,29 +96,14 @@ NAudio.CoreAudioApi.WasapiCapture — 4 public constructor(s)
 
   .ctor()
   .ctor(MMDevice captureDevice)
-  .ctor(MMDevice captureDevice, Boolean useEventSync)
-  .ctor(MMDevice captureDevice, Boolean useEventSync, Int32 audioBufferMillisecondsLength)
+  .ctor(MMDevice captureDevice, bool useEventSync)
+  .ctor(MMDevice captureDevice, bool useEventSync, int audioBufferMillisecondsLength)
 ```
 
-Add `--json` to get machine-readable output:
+---
 
-```bash
-scatman ctors NAudio.Wasapi 2.2.1 NAudio.CoreAudioApi.WasapiCapture --json
-```
-
-```json
-{
-  "package": "NAudio.Wasapi",
-  "version": "2.2.1",
-  "typeName": "NAudio.CoreAudioApi.WasapiCapture",
-  "constructors": [
-    { "parameters": [] },
-    { "parameters": [{ "name": "captureDevice", "typeName": "MMDevice" }] }
-  ]
-}
-```
-
-Packages are cached in `~/.scatman/cache/` after the first download.
+All commands support `--json` for machine-readable output.
+Packages and their transitive dependencies are cached in `~/.scatman/cache/` after the first download.
 
 ---
 
@@ -71,12 +112,10 @@ Packages are cached in `~/.scatman/cache/` after the first download.
 | Command | Description | Status |
 |---|---|---|
 | `ctors <pkg> <ver> <type>` | List public constructors | ✅ done |
-| `types <pkg> <ver>` | List all public types (optional `--namespace`) | 🔲 todo |
-| `members <pkg> <ver> <type>` | List all public members of a type | 🔲 todo |
+| `types <pkg> <ver>` | List all public types (optional `--namespace`) | ✅ done |
+| `members <pkg> <ver> <type>` | List all public members of a type | ✅ done |
 | `search <pkg> <ver> <query>` | Search types and members by name | 🔲 todo |
 | `serve` | Expose everything as an MCP stdio server | 🔲 todo (Phase 2) |
-
-All commands support `--json`.
 
 ---
 
