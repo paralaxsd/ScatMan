@@ -82,6 +82,8 @@ NAudio.CoreAudioApi
 scatman members <package> <version> <typeName>
 ```
 
+Long signatures are automatically expanded to one parameter per line when they would exceed the terminal width.
+
 ```bash
 scatman members NAudio.Wasapi 2.2.1 NAudio.CoreAudioApi.WasapiCapture
 ```
@@ -93,7 +95,10 @@ constructors
   .ctor()
   .ctor(MMDevice captureDevice)
   .ctor(MMDevice captureDevice, bool useEventSync)
-  .ctor(MMDevice captureDevice, bool useEventSync, int audioBufferMillisecondsLength)
+  .ctor(
+    MMDevice captureDevice,
+    bool useEventSync,
+    int audioBufferMillisecondsLength)
 
 events
   event EventHandler<WaveInEventArgs> DataAvailable

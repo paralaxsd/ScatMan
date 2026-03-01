@@ -20,6 +20,10 @@
       "commandName": "Project",
       "commandLineArgs": "members \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture --json"
     },
+    "members [long sig]": {
+      "commandName": "Project",
+      "commandLineArgs": "members \"NAudio.Wasapi\" 2.2.1 WasapiCapture"
+    },
     "types": {
       "commandName": "Project",
       "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1"

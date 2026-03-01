@@ -55,11 +55,23 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
     {
         AnsiConsole.MarkupLine($"[bold]{Markup.Escape(settings.TypeName)}[/] — {ctors.Count} public constructor(s)\n");
 
+        var width = AnsiConsole.Profile.Width;
         foreach (var ctor in ctors)
         {
-            var paramStr = string.Join(", ",
-                ctor.Parameters.Select(p => $"[cyan]{Markup.Escape(p.TypeName)}[/] {Markup.Escape(p.Name)}"));
-            AnsiConsole.MarkupLine($"  .ctor({paramStr})");
+            var flat = string.Join(", ", ctor.Parameters.Select(p => $"{p.TypeName} {p.Name}"));
+            if (2 + 6 + flat.Length + 1 <= width || !ctor.Parameters.Any())
+            {
+                var markup = string.Join(", ", ctor.Parameters
+                    .Select(p => $"[cyan]{Markup.Escape(p.TypeName)}[/] {Markup.Escape(p.Name)}"));
+                AnsiConsole.MarkupLine($"  .ctor({markup})");
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("  .ctor(");
+                foreach (var (p, last) in ctor.Parameters.Select((p, i) => (p, i == ctor.Parameters.Count - 1)))
+                    AnsiConsole.MarkupLine(
+                        $"    [cyan]{Markup.Escape(p.TypeName)}[/] {Markup.Escape(p.Name)}{(last ? ")" : ",")}");
+            }
         }
 
         if (ctors.Count == 0)

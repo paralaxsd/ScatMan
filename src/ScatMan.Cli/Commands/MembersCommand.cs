@@ -59,13 +59,60 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
             AnsiConsole.MarkupLine($"[grey]{label}[/]");
 
             foreach (var m in group)
-                AnsiConsole.MarkupLine($"  [cyan]{Markup.Escape(m.Signature)}[/]");
+                PrintSignature(m.Signature);
 
             AnsiConsole.WriteLine();
         }
 
         if (members.Count == 0)
             AnsiConsole.MarkupLine("  [yellow](no public members)[/]");
+    }
+
+    static void PrintSignature(string signature)
+    {
+        var width = AnsiConsole.Profile.Width;
+        var parenIdx = signature.IndexOf('(');
+
+        if (2 + signature.Length <= width || parenIdx < 0)
+        {
+            AnsiConsole.MarkupLine($"  [cyan]{Markup.Escape(signature)}[/]");
+            return;
+        }
+
+        var prefix = signature[..parenIdx];
+        var inner  = signature[(parenIdx + 1)..signature.LastIndexOf(')')];
+
+        if (string.IsNullOrEmpty(inner))
+        {
+            AnsiConsole.MarkupLine($"  [cyan]{Markup.Escape(signature)}[/]");
+            return;
+        }
+
+        var @params = SplitParams(inner);
+        AnsiConsole.MarkupLine($"  [cyan]{Markup.Escape(prefix)}([/]");
+        foreach (var (p, last) in @params.Select((p, i) => (p, i == @params.Length - 1)))
+            AnsiConsole.MarkupLine($"    [cyan]{Markup.Escape(p)}{(last ? ")" : ",")}[/]");
+    }
+
+    static string[] SplitParams(string s)
+    {
+        var parts = new List<string>();
+        var depth = 0;
+        var start = 0;
+
+        for (var i = 0; i < s.Length; i++)
+        {
+            if      (s[i] is '<' or '(') depth++;
+            else if (s[i] is '>' or ')') depth--;
+            else if (s[i] == ',' && depth == 0)
+            {
+                parts.Add(s[start..i].Trim());
+                start = i + 1;
+            }
+        }
+
+        parts.Add(s[start..].Trim());
+        return [.. parts];
     }
 
     static void PrintError(string message, bool json)
