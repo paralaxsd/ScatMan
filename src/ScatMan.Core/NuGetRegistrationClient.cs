@@ -6,24 +6,45 @@ namespace ScatMan.Core;
 
 public sealed class NuGetRegistrationClient
 {
-    static readonly HttpClient Http = new();
+    static readonly HttpClient Http = new(new HttpClientHandler
+    {
+        AutomaticDecompression = System.Net.DecompressionMethods.GZip
+    });
     static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
-    const string BaseUrl = "https://api.nuget.org/v3/registration5-semver1";
+    const string SemVer1Url = "https://api.nuget.org/v3/registration5-semver1";
+    const string SemVer2Url = "https://api.nuget.org/v3/registration5-gz-semver2";
 
     public async Task<IReadOnlyList<PackageVersionInfo>> GetVersionsAsync(
         string packageId, CancellationToken ct = default)
     {
-        var url = $"{BaseUrl}/{packageId.ToLowerInvariant()}/index.json";
+        var (v1, notFound) = await FetchVersionsAsync(SemVer1Url, packageId, ct);
+        if (notFound)
+            throw new PackageNotFoundException(packageId);
+
+        var (v2, _) = await FetchVersionsAsync(SemVer2Url, packageId, ct);
+
+        var merged = v1.Concat(v2)
+            .DistinctBy(v => v.Version)
+            .OrderByDescending(v => v.Published)
+            .ToList();
+
+        return merged;
+    }
+
+    async Task<(List<PackageVersionInfo> Versions, bool NotFound)> FetchVersionsAsync(
+        string baseUrl, string packageId, CancellationToken ct)
+    {
+        var url = $"{baseUrl}/{packageId.ToLowerInvariant()}/index.json";
 
         using var response = await Http.GetAsync(url, ct);
         if (response.StatusCode == HttpStatusCode.NotFound)
-            throw new PackageNotFoundException(packageId);
+            return ([], true);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(ct);
-        var index = JsonSerializer.Deserialize<RegistrationIndex>(json, JsonOpts)
-            ?? throw new InvalidOperationException("Empty response from NuGet registration API.");
+        var index = JsonSerializer.Deserialize<RegistrationIndex>(json, JsonOpts);
+        if (index is null) return ([], false);
 
         var versions = new List<PackageVersionInfo>();
 
@@ -50,8 +71,7 @@ public sealed class NuGetRegistrationClient
             }
         }
 
-        versions.Sort((a, b) => b.Published.CompareTo(a.Published));
-        return versions;
+        return (versions, false);
     }
 
     record RegistrationIndex(
