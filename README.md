@@ -2,7 +2,7 @@
 
 <p align="center"><img src="images/logo.png" width="300" alt="ScatMan logo" /></p>
 
-> *Improvising over unknown APIs since 2025.*
+> *Improvising over unknown APIs since 2026.*
 
 A good jazz musician doesn't read the whole score before playing — they listen, explore, respond.
 ScatMan does the same with NuGet packages: drop it a package and a type name, and it riffs back
