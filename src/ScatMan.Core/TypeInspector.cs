@@ -31,12 +31,13 @@ public sealed class TypeInspector
 
         var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
+        var ctors   = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Select(FormatConstructor);
         var props   = type.GetProperties(flags).Select(FormatProperty);
         var methods = type.GetMethods(flags).Where(m => !m.IsSpecialName).Select(FormatMethod);
         var fields  = type.GetFields(flags).Where(f => !f.Name.StartsWith('<')).Select(FormatField);
         var events  = type.GetEvents(flags).Select(FormatEvent);
 
-        return [.. props.Concat(methods).Concat(fields).Concat(events)
+        return [.. ctors.Concat(props).Concat(methods).Concat(fields).Concat(events)
                         .OrderBy(d => d.Kind).ThenBy(d => d.Name)];
     }
 
@@ -111,6 +112,13 @@ public sealed class TypeInspector
         _ when t.BaseType?.FullName == "System.MulticastDelegate" => "delegate",
         _ => "class"
     };
+
+    static MemberDescriptor FormatConstructor(ConstructorInfo c)
+    {
+        var @params = string.Join(", ", c.GetParameters()
+            .Select(p => $"{FormatTypeName(p.ParameterType)} {p.Name ?? $"arg{p.Position}"}"));
+        return new MemberDescriptor(".ctor", "constructor", $".ctor({@params})");
+    }
 
     static MemberDescriptor FormatProperty(PropertyInfo p)
     {

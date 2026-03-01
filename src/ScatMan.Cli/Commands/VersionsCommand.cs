@@ -18,6 +18,10 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
         [Description("Include prerelease versions")]
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
         public bool Pre { get; init; }
+
+        [CommandOption("--head <n>")]
+        [Description("Show only the N most recent versions")]
+        public int? Head { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(
@@ -42,22 +46,27 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
             return PrintError(ex.Message, settings.Json);
         }
 
-        var versions = settings.Pre
+        IReadOnlyList<PackageVersionInfo> versions = settings.Pre
             ? allVersions
             : allVersions.Where(v => !v.IsPrerelease).ToList();
 
+        var totalCount = versions.Count;
+        if (settings.Head is { } n)
+            versions = [.. versions.Take(n)];
+
         if (settings.Json)
-            PrintJson(versions, settings);
+            PrintJson(versions, totalCount, settings);
         else
-            PrintFormatted(versions, allVersions, settings);
+            PrintFormatted(versions, totalCount, settings);
 
         return 0;
     }
 
-    static void PrintJson(IReadOnlyList<PackageVersionInfo> versions, Settings settings) =>
+    static void PrintJson(IReadOnlyList<PackageVersionInfo> versions, int totalCount, Settings settings) =>
         Console.WriteLine(JsonSerializer.Serialize(new
         {
             package = settings.Package,
+            total = totalCount,
             versions = versions.Select(v => new
             {
                 version = v.Version,
@@ -66,17 +75,17 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
             })
         }, BaseSettings.JsonOptions));
 
-    static void PrintFormatted(
-        IReadOnlyList<PackageVersionInfo> versions,
-        IReadOnlyList<PackageVersionInfo> allVersions,
-        Settings settings)
+    static void PrintFormatted(IReadOnlyList<PackageVersionInfo> versions, int totalCount, Settings settings)
     {
+        var countLabel = versions.Count < totalCount
+            ? $"{versions.Count} of {totalCount}"
+            : $"{versions.Count}";
         AnsiConsole.MarkupLine(
-            $"[bold]{Markup.Escape(settings.Package)}[/] — {versions.Count} version(s)\n");
+            $"[bold]{Markup.Escape(settings.Package)}[/] — {countLabel} version(s)\n");
 
         if (settings.Pre)
         {
-            var pre = allVersions.Where(v => v.IsPrerelease).ToList();
+            var pre = versions.Where(v => v.IsPrerelease).ToList();
             AnsiConsole.MarkupLine("[yellow]prerelease[/]");
             if (pre.Count == 0)
                 AnsiConsole.MarkupLine("  [dim](none)[/]");

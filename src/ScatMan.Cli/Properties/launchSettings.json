@@ -32,10 +32,6 @@
       "commandName": "Project",
       "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --json"
     },
-    "versions": {
-      "commandName": "Project",
-      "commandLineArgs": "versions \"NAudio.Lame\""
-    },
     "versions --pre": {
       "commandName": "Project",
       "commandLineArgs": "versions \"NAudio.Lame\" --pre"
@@ -43,6 +39,10 @@
     "versions [json]": {
       "commandName": "Project",
       "commandLineArgs": "versions \"NAudio.Lame\" --json"
+    },
+    "versions --head 3": {
+      "commandName": "Project",
+      "commandLineArgs": "versions \"NAudio.Lame\" --head 3"
     }
   }
 }

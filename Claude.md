@@ -12,3 +12,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Prefer functional expressions** (LINQ, etc.) over loops where readable.
 - Max line length: **100 characters**.
 - Use **strategic blank lines** to separate logical blocks, error handling, and return statements.
+
+## Git
+- **No conventional commits** — no `feat:`, `fix:`, `chore:` prefixes. Plain imperative subject line, capitalize first word.
