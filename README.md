@@ -23,7 +23,7 @@ dotnet tool install --global ScatMan.Cli
 ### `versions` — list available versions of a package
 
 ```bash
-scatman versions <package> [--pre]
+scatman versions <package> [--pre] [--head <n>]
 ```
 
 ```bash
@@ -44,6 +44,7 @@ stable
 ```
 
 Without `--pre`, only stable versions are shown. With `--pre`, both sections are always displayed.
+Use `--head N` to show only the N most recent versions; the header will read `N of total` so you always know how many exist.
 
 ---
 
@@ -86,25 +87,35 @@ scatman members NAudio.Wasapi 2.2.1 NAudio.CoreAudioApi.WasapiCapture
 ```
 
 ```
-NAudio.CoreAudioApi.WasapiCapture — 9 public member(s)
+NAudio.CoreAudioApi.WasapiCapture — 13 public member(s)
+
+constructors
+  .ctor()
+  .ctor(MMDevice captureDevice)
+  .ctor(MMDevice captureDevice, bool useEventSync)
+  .ctor(MMDevice captureDevice, bool useEventSync, int audioBufferMillisecondsLength)
 
 events
+  event EventHandler<WaveInEventArgs> DataAvailable
   event EventHandler<StoppedEventArgs> RecordingStopped
 
 methods
   void Dispose()
+  static MMDevice GetDefaultCaptureDevice()
   void StartRecording()
   void StopRecording()
 
 properties
-  bool IsWaveFormatSupported(WaveFormat waveFormat)
-  MMDevice MmDevice { get; }
+  CaptureState CaptureState { get; }
+  AudioClientShareMode ShareMode { get; set; }
   WaveFormat WaveFormat { get; set; }
 ```
 
 ---
 
 ### `ctors` — list constructors of a type
+
+> Convenience alias — constructors are also included as the first group in `members`.
 
 ```bash
 scatman ctors <package> <version> <typeName>
