@@ -7,6 +7,10 @@
     "List constructors": {
       "commandName": "Project",
       "commandLineArgs": "ctors \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture"
+    },
+    "List constructors [JSON]": {
+      "commandName": "Project",
+      "commandLineArgs": "ctors \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture --json"
     }
   }
 }
