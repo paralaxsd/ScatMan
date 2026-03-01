@@ -19,6 +19,11 @@ app.Configure(config =>
         .WithDescription("List public types in a NuGet package.")
         .WithExample(["types", "NAudio.Wasapi", "2.2.1"])
         .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--namespace", "NAudio.CoreAudioApi"]);
+
+    config.AddCommand<VersionsCommand>("versions")
+        .WithDescription("List available versions of a NuGet package.")
+        .WithExample(["versions", "NAudio.Lame"])
+        .WithExample(["versions", "LiveChartsCore.SkiaSharpView.Maui", "--pre"]);
 });
 
 return await app.RunAsync(args);

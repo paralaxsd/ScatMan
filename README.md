@@ -1,9 +1,5 @@
 # ScatMan
-<p align="center">
-  <img src="https://raw.githubusercontent.com/paralaxsd/ScatMan/main/images/logo.png"
-       width="300"
-       alt="ScatMan logo" />
-</p>
+![ScatMan logo](https://raw.githubusercontent.com/paralaxsd/ScatMan/main/images/logo.png)
 
 > *Improvising over unknown APIs since 2026.*
 
@@ -23,6 +19,33 @@ dotnet tool install --global ScatMan.Cli
 ---
 
 ## Commands
+
+### `versions` — list available versions of a package
+
+```bash
+scatman versions <package> [--pre]
+```
+
+```bash
+scatman versions NAudio.Lame --pre
+```
+
+```
+NAudio.Lame — 15 version(s)
+
+prerelease
+  (none)
+
+stable
+  2.1.0    2023-05-30
+  2.0.1    2022-01-17
+  2.0.0    2021-02-10
+  ...
+```
+
+Without `--pre`, only stable versions are shown. With `--pre`, both sections are always displayed.
+
+---
 
 ### `types` — list all public types in a package
 
@@ -111,6 +134,7 @@ Packages and their transitive dependencies are cached in `~/.scatman/cache/` aft
 
 | Command | Description | Status |
 |---|---|---|
+| `versions <pkg>` | List available versions (optional `--pre`) | ✅ done |
 | `ctors <pkg> <ver> <type>` | List public constructors | ✅ done |
 | `types <pkg> <ver>` | List all public types (optional `--namespace`) | ✅ done |
 | `members <pkg> <ver> <type>` | List all public members of a type | ✅ done |
