@@ -1,6 +1,9 @@
 # ScatMan
-
-<p align="center"><img src="images/logo.png" width="300" alt="ScatMan logo" /></p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/paralaxsd/ScatMan/main/images/logo.png"
+       width="300"
+       alt="ScatMan logo" />
+</p>
 
 > *Improvising over unknown APIs since 2026.*
 
