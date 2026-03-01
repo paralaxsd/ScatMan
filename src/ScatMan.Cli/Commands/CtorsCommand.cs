@@ -1,29 +1,16 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ScatMan.Cli;
 using ScatMan.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace ScatMan.Cli;
+namespace ScatMan.Cli.Commands;
 
 sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
 {
-    static readonly JsonSerializerOptions JsonOptions = new()
+    public sealed class Settings : PackageSettings
     {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    public sealed class Settings : BaseSettings
-    {
-        [CommandArgument(0, "<package>")]
-        [Description("NuGet package ID")]
-        public string Package { get; init; } = "";
-
-        [CommandArgument(1, "<version>")]
-        [Description("Package version")]
-        public string Version { get; init; } = "";
-
         [CommandArgument(2, "<typeName>")]
         [Description("Full or simple type name")]
         public string TypeName { get; init; } = "";
@@ -31,7 +18,7 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
-        var assemblies = await FetchAssembliesAsync(settings, ct);
+        var assemblies = await settings.FetchAssembliesAsync(ct);
 
         try
         {
@@ -49,23 +36,6 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
         return 0;
     }
 
-    static async Task<IReadOnlyList<string>> FetchAssembliesAsync(Settings settings, CancellationToken ct)
-    {
-        var downloader = new PackageDownloader();
-
-        if (settings.Json)
-            return await downloader.DownloadAsync(settings.Package, settings.Version, ct);
-
-        IReadOnlyList<string> assemblies = [];
-        await AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .StartAsync(
-                $"Downloading [bold]{settings.Package} {settings.Version}[/]...",
-                async _ => assemblies = await downloader.DownloadAsync(settings.Package, settings.Version, ct));
-
-        return assemblies;
-    }
-
     static void PrintJson(IReadOnlyList<ConstructorSignature> ctors, Settings settings)
     {
         var result = new
@@ -78,7 +48,7 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
                 parameters = c.Parameters.Select(p => new { p.Name, p.TypeName })
             })
         };
-        Console.WriteLine(JsonSerializer.Serialize(result, JsonOptions));
+        Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 
     static void PrintFormatted(IReadOnlyList<ConstructorSignature> ctors, Settings settings)
@@ -99,7 +69,7 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
     static void PrintError(string message, bool json)
     {
         if (json)
-            Console.WriteLine(JsonSerializer.Serialize(new { error = message }, JsonOptions));
+            Console.WriteLine(JsonSerializer.Serialize(new { error = message }, BaseSettings.JsonOptions));
         else
             AnsiConsole.MarkupLine($"[red]Error:[/] {Markup.Escape(message)}");
     }

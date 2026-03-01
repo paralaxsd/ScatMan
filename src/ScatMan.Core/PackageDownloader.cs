@@ -1,9 +1,9 @@
-using System.IO.Compression;
 using NuGet.Common;
-using NuGet.Configuration;
+using NuGet.Packaging;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
+using System.IO.Compression;
 
 namespace ScatMan.Core;
 
@@ -15,19 +15,35 @@ public sealed class PackageDownloader(string? cacheRoot = null)
     public async Task<IReadOnlyList<string>> DownloadAsync(
         string packageId, string version, CancellationToken ct = default)
     {
-        var packageVersion = NuGetVersion.Parse(version);
+        var paths   = new List<string>();
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        await CollectAsync(packageId, version, paths, visited, ct);
+
+        return paths;
+    }
+
+    async Task CollectAsync(
+        string packageId, string version,
+        List<string> paths, HashSet<string> visited, CancellationToken ct)
+    {
+        if (!visited.Add($"{packageId}/{version}")) return;
+
         var packageDir = Path.Combine(_cacheRoot, packageId.ToLowerInvariant(), version);
 
         if (!Directory.Exists(packageDir))
-            await DownloadAndExtractAsync(packageId, packageVersion, packageDir, ct);
+            await DownloadAndExtractAsync(packageId, NuGetVersion.Parse(version), packageDir, ct);
 
-        return SelectAssemblies(packageDir);
+        paths.AddRange(SelectAssemblies(packageDir));
+
+        foreach (var (depId, depVer) in ReadDependencies(packageDir))
+            await CollectAsync(depId, depVer, paths, visited, ct);
     }
 
     async Task DownloadAndExtractAsync(
         string packageId, NuGetVersion version, string destDir, CancellationToken ct)
     {
-        var repo = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+        var repo     = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
         var resource = await repo.GetResourceAsync<FindPackageByIdResource>(ct);
 
         Directory.CreateDirectory(destDir);
@@ -39,6 +55,37 @@ public sealed class PackageDownloader(string? cacheRoot = null)
 
         ZipFile.ExtractToDirectory(nupkgPath, destDir, overwriteFiles: true);
         File.Delete(nupkgPath);
+    }
+
+    static IEnumerable<(string Id, string Version)> ReadDependencies(string packageDir)
+    {
+        var nuspecPath = Directory.GetFiles(packageDir, "*.nuspec").FirstOrDefault();
+        if (nuspecPath is null) yield break;
+
+        NuspecReader nuspec;
+        try   { nuspec = new NuspecReader(nuspecPath); }
+        catch { yield break; }
+
+        var group = nuspec.GetDependencyGroups()
+            .OrderByDescending(g => RankTfm(SafeShortName(g)))
+            .FirstOrDefault();
+
+        if (group is null) yield break;
+
+        foreach (var pkg in group.Packages)
+        {
+            var resolvedVersion = (pkg.VersionRange.MinVersion ?? pkg.VersionRange.MaxVersion)
+                ?.ToNormalizedString();
+
+            if (resolvedVersion is not null)
+                yield return (pkg.Id, resolvedVersion);
+        }
+    }
+
+    static string SafeShortName(PackageDependencyGroup g)
+    {
+        try   { return g.TargetFramework.GetShortFolderName() ?? ""; }
+        catch { return ""; }
     }
 
     static IReadOnlyList<string> SelectAssemblies(string packageDir)

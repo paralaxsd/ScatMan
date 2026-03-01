@@ -4,13 +4,33 @@
       "commandName": "WSL2",
       "distributionName": ""
     },
-    "List constructors": {
+    "ctors": {
       "commandName": "Project",
       "commandLineArgs": "ctors \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture"
     },
-    "List constructors [JSON]": {
+    "ctors [json]": {
       "commandName": "Project",
       "commandLineArgs": "ctors \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture --json"
+    },
+    "members": {
+      "commandName": "Project",
+      "commandLineArgs": "members \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture"
+    },
+    "members [json]": {
+      "commandName": "Project",
+      "commandLineArgs": "members \"NAudio.Wasapi\" 2.2.1 NAudio.CoreAudioApi.WasapiCapture --json"
+    },
+    "types": {
+      "commandName": "Project",
+      "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1"
+    },
+    "types --namespace": {
+      "commandName": "Project",
+      "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --namespace NAudio.CoreAudioApi"
+    },
+    "types [json]": {
+      "commandName": "Project",
+      "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --json"
     }
   }
 }
