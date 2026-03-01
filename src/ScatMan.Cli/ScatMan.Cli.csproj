@@ -4,7 +4,12 @@
     <OutputType>Exe</OutputType>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>scatman</ToolCommandName>
+    <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\images\logo.png" Pack="true" PackagePath="\icon.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Spectre.Console.Cli" />
