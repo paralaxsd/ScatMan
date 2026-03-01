@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ScatMan.Cli/ScatMan.Cli.csproj" />
+    <Project Path="src/ScatMan.Core/ScatMan.Core.csproj" />
+    <Project Path="src/ScatMan.Mcp/ScatMan.Mcp.csproj" />
+  </Folder>
+</Solution>
