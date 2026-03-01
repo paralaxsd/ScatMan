@@ -49,11 +49,11 @@ public sealed class PackageDownloader(string? cacheRoot = null)
         Directory.CreateDirectory(destDir);
 
         var nupkgPath = Path.Combine(destDir, $"{packageId}.nupkg");
-        using (var stream = File.Create(nupkgPath))
+        await using (var stream = File.Create(nupkgPath))
             await resource.CopyNupkgToStreamAsync(
                 packageId, version, stream, new SourceCacheContext(), NullLogger.Instance, ct);
 
-        ZipFile.ExtractToDirectory(nupkgPath, destDir, overwriteFiles: true);
+        await ZipFile.ExtractToDirectoryAsync(nupkgPath, destDir, overwriteFiles: true, cancellationToken: ct);
         File.Delete(nupkgPath);
     }
 

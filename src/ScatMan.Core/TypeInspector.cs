@@ -65,7 +65,10 @@ public sealed class TypeInspector
                         t.Namespace ?? "",
                         GetTypeKind(t))));
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
         return [.. types.OrderBy(t => t.Namespace).ThenBy(t => t.Name)];
@@ -91,7 +94,10 @@ public sealed class TypeInspector
 
                 if (type is not null) return type;
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
         return null;
