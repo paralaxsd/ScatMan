@@ -1,4 +1,4 @@
-# ScatMan
+# ScatMan [![ci](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml/badge.svg)](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/v/ScatMan.Cli.svg?color=blue)](https://www.nuget.org/packages/ScatMan.Cli)
 ![ScatMan logo](https://raw.githubusercontent.com/paralaxsd/ScatMan/main/images/logo.png)
 
 > *Improvising over unknown APIs since 2026.*
