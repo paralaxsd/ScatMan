@@ -60,10 +60,17 @@ public sealed class TypeInspector
                     if (t.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
                         matchingTypes.Add(descriptor);
 
-                    matchingMembers.AddRange(
-                        GetMembersFromType(t)
-                            .Where(m => m.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
-                            .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m)));
+                    try
+                    {
+                        matchingMembers.AddRange(
+                            GetMembersFromType(t)
+                                .Where(m => m.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                                .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m)));
+                    }
+                    catch
+                    {
+                        // ignored — type references unavailable assemblies
+                    }
                 }
             }
             catch
@@ -113,16 +120,34 @@ public sealed class TypeInspector
 
     static IReadOnlyList<MemberDescriptor> GetMembersFromType(Type type)
     {
-        var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var flags   = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var results = new List<MemberDescriptor>();
 
-        var ctors   = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Select(FormatConstructor);
-        var props   = type.GetProperties(flags).Select(FormatProperty);
-        var methods = type.GetMethods(flags).Where(m => !m.IsSpecialName).Select(FormatMethod);
-        var fields  = type.GetFields(flags).Where(f => !f.Name.StartsWith('<')).Select(FormatField);
-        var events  = type.GetEvents(flags).Select(FormatEvent);
+        void TryAdd<T>(Func<IEnumerable<T>> getMembers, Func<T, MemberDescriptor> format)
+        {
+            IEnumerable<T> members;
+            try   { members = getMembers(); }
+            catch { return; }
 
-        return [.. ctors.Concat(props).Concat(methods).Concat(fields).Concat(events)
-                        .OrderBy(d => d.Kind).ThenBy(d => d.Name)];
+            foreach (var m in members)
+            {
+                try { results.Add(format(m)); }
+                catch { /* member references unavailable assembly */ }
+            }
+        }
+
+        TryAdd(() => type.GetConstructors(BindingFlags.Public | BindingFlags.Instance),
+               FormatConstructor);
+        TryAdd(() => type.GetProperties(flags),
+               FormatProperty);
+        TryAdd(() => type.GetMethods(flags).Where(m => !m.IsSpecialName),
+               FormatMethod);
+        TryAdd(() => type.GetFields(flags).Where(f => !f.Name.StartsWith('<')),
+               FormatField);
+        TryAdd(() => type.GetEvents(flags),
+               FormatEvent);
+
+        return [.. results.OrderBy(d => d.Kind).ThenBy(d => d.Name)];
     }
 
     static MetadataLoadContext CreateContext(IReadOnlyList<string> assemblyPaths)
@@ -165,8 +190,12 @@ public sealed class TypeInspector
 
     static MemberDescriptor FormatConstructor(ConstructorInfo c)
     {
-        var @params = string.Join(", ", c.GetParameters()
-            .Select(p => $"{FormatTypeName(p.ParameterType)} {p.Name ?? $"arg{p.Position}"}"));
+        ParameterInfo[] parms;
+        try   { parms = c.GetParameters(); }
+        catch { parms = []; }
+
+        var @params = string.Join(", ", parms
+            .Select(p => $"{SafeTypeName(() => p.ParameterType)} {p.Name ?? $"arg{p.Position}"}"));
         return new MemberDescriptor(".ctor", "constructor", $".ctor({@params})");
     }
 
@@ -174,33 +203,44 @@ public sealed class TypeInspector
     {
         var isStatic  = p.GetMethod?.IsStatic == true || p.SetMethod?.IsStatic == true;
         var accessors = (p.CanRead ? "get; " : "") + (p.CanWrite ? "set; " : "");
-        var sig = $"{(isStatic ? "static " : "")}{FormatTypeName(p.PropertyType)} {p.Name} {{ {accessors}}}";
+        var sig = $"{(isStatic ? "static " : "")}{SafeTypeName(() => p.PropertyType)} {p.Name} {{ {accessors}}}";
         return new MemberDescriptor(p.Name, "property", sig);
     }
 
     static MemberDescriptor FormatMethod(MethodInfo m)
     {
         var prefix     = m.IsStatic ? "static " : "";
-        var returnType = FormatTypeName(m.ReturnType);
+        var returnType = SafeTypeName(() => m.ReturnType);
         var generics   = m.IsGenericMethod
             ? $"<{string.Join(", ", m.GetGenericArguments().Select(t => t.Name))}>"
             : "";
-        var @params = string.Join(", ", m.GetParameters()
-            .Select(p => $"{FormatTypeName(p.ParameterType)} {p.Name ?? $"arg{p.Position}"}"));
+
+        ParameterInfo[] parms;
+        try   { parms = m.GetParameters(); }
+        catch { parms = []; }
+
+        var @params = string.Join(", ", parms
+            .Select(p => $"{SafeTypeName(() => p.ParameterType)} {p.Name ?? $"arg{p.Position}"}"));
         return new MemberDescriptor(m.Name, "method", $"{prefix}{returnType} {m.Name}{generics}({@params})");
     }
 
     static MemberDescriptor FormatField(FieldInfo f)
     {
         var mods = (f.IsStatic ? "static " : "") + (f.IsInitOnly ? "readonly " : "");
-        return new MemberDescriptor(f.Name, "field", $"{mods}{FormatTypeName(f.FieldType)} {f.Name}");
+        return new MemberDescriptor(f.Name, "field", $"{mods}{SafeTypeName(() => f.FieldType)} {f.Name}");
     }
 
     static MemberDescriptor FormatEvent(EventInfo e)
     {
         var isStatic = e.AddMethod?.IsStatic == true;
-        var typeName = e.EventHandlerType is { } t ? FormatTypeName(t) : "?";
+        var typeName = SafeTypeName(() => e.EventHandlerType!);
         return new MemberDescriptor(e.Name, "event", $"{(isStatic ? "static " : "")}event {typeName} {e.Name}");
+    }
+
+    static string SafeTypeName(Func<Type> getType)
+    {
+        try { return FormatTypeName(getType()); }
+        catch { return "?"; }
     }
 
     static string FormatTypeName(Type t)

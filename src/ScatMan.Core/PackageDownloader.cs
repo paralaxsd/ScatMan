@@ -91,14 +91,35 @@ public sealed class PackageDownloader(string? cacheRoot = null)
     static IReadOnlyList<string> SelectAssemblies(string packageDir)
     {
         var libDir = Path.Combine(packageDir, "lib");
-        if (!Directory.Exists(libDir))
-            return [];
+        if (!Directory.Exists(libDir)) return [];
 
-        var best = Directory.GetDirectories(libDir)
-            .OrderByDescending(d => RankTfm(Path.GetFileName(d)))
-            .FirstOrDefault();
+        var allDirs = Directory.GetDirectories(libDir);
+        if (allDirs.Length == 0) return [];
 
-        return best is null ? [] : [.. Directory.GetFiles(best, "*.dll")];
+        // Strip platform suffix before ranking so net10.0-android ranks same as net10.0.
+        static int BaseRank(string dir)
+        {
+            var tfm  = Path.GetFileName(dir);
+            var dash = tfm.IndexOf('-');
+            return RankTfm(dash < 0 ? tfm : tfm[..dash]);
+        }
+
+        var bestRank = allDirs.Max(BaseRank);
+        var bestDirs = allDirs.Where(d => BaseRank(d) == bestRank);
+
+        // Deduplicate by filename; platform-specific overrides portable so we include
+        // platform extension methods while avoiding duplicate assembly loads in MLC.
+        var byName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var dll in bestDirs.Where(d => !Path.GetFileName(d).Contains('-'))
+                                    .SelectMany(d => Directory.GetFiles(d, "*.dll")))
+            byName[Path.GetFileName(dll)] = dll;
+
+        foreach (var dll in bestDirs.Where(d => Path.GetFileName(d).Contains('-'))
+                                    .SelectMany(d => Directory.GetFiles(d, "*.dll")))
+            byName[Path.GetFileName(dll)] = dll;
+
+        return [.. byName.Values];
     }
 
     static int RankTfm(string tfm) => tfm.ToLowerInvariant() switch
