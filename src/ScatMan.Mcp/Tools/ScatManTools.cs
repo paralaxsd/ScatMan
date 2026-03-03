@@ -49,6 +49,7 @@ static class ScatManTools
         [Description("NuGet package ID")] string packageId,
         [Description("Package version")] string version,
         [Description("Filter by namespace (optional)")] string? ns = null,
+        [Description("Case-insensitive substring filter on type name (optional)")] string? filter = null,
         CancellationToken ct = default)
     {
         var assemblies = await FetchAssembliesAsync(packageId, version, ct);
@@ -56,13 +57,51 @@ static class ScatManTools
 
         var types = new TypeInspector().GetTypes(assemblies, ns);
 
+        if (filter is not null)
+            types = [.. types.Where(t => t.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))];
+
         return Serialize(new
         {
-            package   = packageId,
+            package    = packageId,
             version,
             @namespace = ns,
-            count     = types.Count,
-            types     = types.Select(t => new { t.FullName, t.Name, t.Namespace, t.Kind })
+            filter,
+            count      = types.Count,
+            types      = types.Select(t => new { t.FullName, t.Name, t.Namespace, t.Kind })
+        });
+    }
+
+    [McpServerTool(Name = "search")]
+    [Description(
+        "Search for types and members by name across an entire NuGet package. " +
+        "Useful when you know a method or type name exists but not which type it belongs to.")]
+    static async Task<string> Search(
+        [Description("NuGet package ID")] string packageId,
+        [Description("Package version")] string version,
+        [Description("Case-insensitive substring to search for in type and member names")] string query,
+        [Description("Restrict search to this namespace (optional)")] string? ns = null,
+        CancellationToken ct = default)
+    {
+        var assemblies = await FetchAssembliesAsync(packageId, version, ct);
+        if (assemblies is null) return Error($"Package {packageId} {version} not found.");
+
+        var hits = new TypeInspector().Search(assemblies, query, ns);
+
+        return Serialize(new
+        {
+            package        = packageId,
+            version,
+            query,
+            @namespace     = ns,
+            matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Name, t.Namespace, t.Kind }),
+            matchingMembers = hits.Members.Select(h => new
+            {
+                h.TypeName,
+                h.TypeFullName,
+                h.Member.Kind,
+                h.Member.Name,
+                h.Member.Signature
+            })
         });
     }
 

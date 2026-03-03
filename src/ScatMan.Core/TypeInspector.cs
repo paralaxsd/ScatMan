@@ -29,16 +29,52 @@ public sealed class TypeInspector
         var type = FindType(mlc, assemblyPaths, typeName)
             ?? throw new TypeNotFoundException(typeName);
 
-        var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        return GetMembersFromType(type);
+    }
 
-        var ctors   = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Select(FormatConstructor);
-        var props   = type.GetProperties(flags).Select(FormatProperty);
-        var methods = type.GetMethods(flags).Where(m => !m.IsSpecialName).Select(FormatMethod);
-        var fields  = type.GetFields(flags).Where(f => !f.Name.StartsWith('<')).Select(FormatField);
-        var events  = type.GetEvents(flags).Select(FormatEvent);
+    public SearchHits Search(IReadOnlyList<string> assemblyPaths, string query, string? ns = null)
+    {
+        using var mlc = CreateContext(assemblyPaths);
 
-        return [.. ctors.Concat(props).Concat(methods).Concat(fields).Concat(events)
-                        .OrderBy(d => d.Kind).ThenBy(d => d.Name)];
+        var matchingTypes   = new List<TypeDescriptor>();
+        var matchingMembers = new List<MemberSearchHit>();
+
+        foreach (var path in assemblyPaths)
+        {
+            try
+            {
+                var asm = mlc.LoadFromAssemblyPath(path);
+
+                Type[] allTypes;
+                try   { allTypes = asm.GetTypes(); }
+                catch (ReflectionTypeLoadException ex) { allTypes = [.. ex.Types.OfType<Type>()]; }
+
+                foreach (var t in allTypes.Where(t => t.IsPublic && (ns is null || t.Namespace == ns)))
+                {
+                    var descriptor = new TypeDescriptor(
+                        (t.FullName ?? t.Name).Replace('+', '.'),
+                        t.Name,
+                        t.Namespace ?? "",
+                        GetTypeKind(t));
+
+                    if (t.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                        matchingTypes.Add(descriptor);
+
+                    matchingMembers.AddRange(
+                        GetMembersFromType(t)
+                            .Where(m => m.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                            .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m)));
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        return new SearchHits(
+            [.. matchingTypes.OrderBy(t => t.Namespace).ThenBy(t => t.Name)],
+            [.. matchingMembers.OrderBy(h => h.TypeName).ThenBy(h => h.Member.Name)]);
     }
 
     public IReadOnlyList<TypeDescriptor> GetTypes(
@@ -73,6 +109,20 @@ public sealed class TypeInspector
         }
 
         return [.. types.OrderBy(t => t.Namespace).ThenBy(t => t.Name)];
+    }
+
+    static IReadOnlyList<MemberDescriptor> GetMembersFromType(Type type)
+    {
+        var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+
+        var ctors   = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance).Select(FormatConstructor);
+        var props   = type.GetProperties(flags).Select(FormatProperty);
+        var methods = type.GetMethods(flags).Where(m => !m.IsSpecialName).Select(FormatMethod);
+        var fields  = type.GetFields(flags).Where(f => !f.Name.StartsWith('<')).Select(FormatField);
+        var events  = type.GetEvents(flags).Select(FormatEvent);
+
+        return [.. ctors.Concat(props).Concat(methods).Concat(fields).Concat(events)
+                        .OrderBy(d => d.Kind).ThenBy(d => d.Name)];
     }
 
     static MetadataLoadContext CreateContext(IReadOnlyList<string> assemblyPaths)
