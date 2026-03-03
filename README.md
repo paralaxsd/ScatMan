@@ -1,4 +1,4 @@
-# ScatMan [![ci](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml/badge.svg)](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/v/ScatMan.Cli.svg?color=blue)](https://www.nuget.org/packages/ScatMan.Cli)
+# ScatMan [![ci](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml/badge.svg)](https://github.com/paralaxsd/ScatMan/actions/workflows/ci.yml) [![CLI NuGet](https://img.shields.io/nuget/v/ScatMan.Cli.svg?color=blue)](https://www.nuget.org/packages/ScatMan.Cli) [![MCP NuGet](https://img.shields.io/nuget/v/ScatMan.Mcp.svg?color=blue)](https://www.nuget.org/packages/ScatMan.Mcp)
 ![ScatMan logo](https://raw.githubusercontent.com/paralaxsd/ScatMan/main/images/logo.png)
 
 > *Improvising over unknown APIs since 2026.*
