@@ -51,28 +51,48 @@ Use `--head N` to show only the N most recent versions; the header will read `N 
 ### `types` — list all public types in a package
 
 ```bash
-scatman types <package> <version> [--namespace <ns>]
+scatman types <package> <version> [--namespace <ns>] [--filter <substring>]
 ```
 
 ```bash
-scatman types NAudio.Wasapi 2.2.1 --namespace NAudio.CoreAudioApi
+scatman types NAudio.Wasapi 2.2.1 --namespace NAudio.CoreAudioApi --filter Capture
 ```
 
 ```
-NAudio.Wasapi 2.2.1 [NAudio.CoreAudioApi] — 38 public type(s)
+NAudio.Wasapi 2.2.1 [NAudio.CoreAudioApi] ~Capture — 2 public type(s)
 
 NAudio.CoreAudioApi
-  class      AudioClient
   class      AudioCaptureClient
-  class      AudioEndpointVolume
-  class      MMDevice
-  class      MMDeviceEnumerator
   class      WasapiCapture
-  class      WasapiOut
-  enum       AudioClientShareMode
-  interface  IAudioSessionEventsHandler
-  ...
 ```
+
+`--filter` is a case-insensitive substring match on the type name, combinable with `--namespace`.
+
+---
+
+### `search` — search types and members across a package
+
+```bash
+scatman search <package> <version> <query> [--namespace <ns>]
+```
+
+```bash
+scatman search NAudio.Wasapi 2.2.1 GetDefaultCaptureDevice
+```
+
+```
+NAudio.Wasapi 2.2.1 — search "GetDefaultCaptureDevice"
+
+Types (0)
+  (none)
+
+Members (1)
+  WasapiCapture
+    method       static MMDevice GetDefaultCaptureDevice()
+```
+
+Cross-type substring search — useful when you know a method name exists somewhere in the package
+but not which type owns it. Both type names and member names are searched.
 
 ---
 
@@ -181,7 +201,8 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 | Tool | Description |
 |---|---|
 | `get_versions` | List available versions of a package (`packageId`, `includePrerelease?`) |
-| `get_types` | List all public types (`packageId`, `version`, `ns?`) |
+| `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`) |
+| `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`) |
 | `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`) |
 
 ---
@@ -194,7 +215,7 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 | `ctors <pkg> <ver> <type>` | List public constructors | ✅ done |
 | `types <pkg> <ver>` | List all public types (optional `--namespace`) | ✅ done |
 | `members <pkg> <ver> <type>` | List all public members of a type | ✅ done |
-| `search <pkg> <ver> <query>` | Search types and members by name | 🔲 todo |
+| `search <pkg> <ver> <query>` | Search types and members by name | ✅ done |
 | `serve` | Expose everything as an MCP stdio server | ✅ done (Phase 2) |
 
 ---
