@@ -18,7 +18,13 @@ app.Configure(config =>
     config.AddCommand<TypesCommand>("types")
         .WithDescription("List public types in a NuGet package.")
         .WithExample(["types", "NAudio.Wasapi", "2.2.1"])
-        .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--namespace", "NAudio.CoreAudioApi"]);
+        .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--namespace", "NAudio.CoreAudioApi"])
+        .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--filter", "Capture"]);
+
+    config.AddCommand<SearchCommand>("search")
+        .WithDescription("Search for types and members by name across an entire NuGet package.")
+        .WithExample(["search", "NAudio.Wasapi", "2.2.1", "Capture"])
+        .WithExample(["search", "NAudio.Wasapi", "2.2.1", "GetDefaultDevice"]);
 
     config.AddCommand<VersionsCommand>("versions")
         .WithDescription("List available versions of a NuGet package.")

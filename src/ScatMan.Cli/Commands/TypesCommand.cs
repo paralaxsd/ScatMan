@@ -15,12 +15,19 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         [CommandOption("-n|--namespace")]
         [Description("Filter by namespace")]
         public string? Namespace { get; init; }
+
+        [CommandOption("-f|--filter")]
+        [Description("Case-insensitive substring filter on type name")]
+        public string? Filter { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var assemblies = await settings.FetchAssembliesAsync(ct);
         var types      = new TypeInspector().GetTypes(assemblies, settings.Namespace);
+
+        if (settings.Filter is { } f)
+            types = [.. types.Where(t => t.Name.Contains(f, StringComparison.OrdinalIgnoreCase))];
 
         if (settings.Json) PrintJson(types, settings);
         else PrintFormatted(types, settings);
@@ -35,6 +42,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
             package    = settings.Package,
             version    = settings.Version,
             @namespace = settings.Namespace,
+            filter     = settings.Filter,
             types      = types.Select(t => new { t.FullName, t.Kind })
         };
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
@@ -42,9 +50,10 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
 
     static void PrintFormatted(IReadOnlyList<TypeDescriptor> types, Settings settings)
     {
-        var nsLabel = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
+        var nsLabel     = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
+        var filterLabel = settings.Filter is { } f ? $" ~[italic]{Markup.Escape(f)}[/]" : "";
         AnsiConsole.MarkupLine(
-            $"[bold]{Markup.Escape(settings.Package)} {settings.Version}[/]{nsLabel} — {types.Count} public type(s)\n");
+            $"[bold]{Markup.Escape(settings.Package)} {settings.Version}[/]{nsLabel}{filterLabel} — {types.Count} public type(s)\n");
 
         foreach (var group in types.GroupBy(t => t.Namespace).OrderBy(g => g.Key))
         {

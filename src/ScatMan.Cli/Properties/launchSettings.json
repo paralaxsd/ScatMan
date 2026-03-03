@@ -32,9 +32,33 @@
       "commandName": "Project",
       "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --namespace NAudio.CoreAudioApi"
     },
+    "types --filter": {
+      "commandName": "Project",
+      "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --filter Capture"
+    },
+    "types --namespace --filter": {
+      "commandName": "Project",
+      "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --namespace NAudio.CoreAudioApi --filter Capture"
+    },
     "types [json]": {
       "commandName": "Project",
       "commandLineArgs": "types \"NAudio.Wasapi\" 2.2.1 --json"
+    },
+    "search": {
+      "commandName": "Project",
+      "commandLineArgs": "search \"NAudio.Wasapi\" 2.2.1 Capture"
+    },
+    "search --namespace": {
+      "commandName": "Project",
+      "commandLineArgs": "search \"NAudio.Wasapi\" 2.2.1 Capture --namespace NAudio.CoreAudioApi"
+    },
+    "search [specific query]": {
+      "commandName": "Project",
+      "commandLineArgs": "search \"NAudio.Wasapi\" 2.2.1 GetDefaultCaptureDevice"
+    },
+    "search [json]": {
+      "commandName": "Project",
+      "commandLineArgs": "search \"NAudio.Wasapi\" 2.2.1 Capture --json"
     },
     "versions --pre": {
       "commandName": "Project",
