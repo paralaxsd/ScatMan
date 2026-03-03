@@ -132,6 +132,11 @@ static class ScatManTools
         });
     }
 
+    [McpServerTool(Name = "meta")]
+    [Description(
+        "Show metadata about the ScatMan MCP tool, including version and build information.")]
+    static string Meta() => Serialize(MetaInfoFactory.Create());
+
     static async Task<IReadOnlyList<string>?> FetchAssembliesAsync(
         string packageId, string version, CancellationToken ct)
     {

@@ -30,6 +30,9 @@ app.Configure(config =>
         .WithDescription("List available versions of a NuGet package.")
         .WithExample(["versions", "NAudio.Lame"])
         .WithExample(["versions", "LiveChartsCore.SkiaSharpView.Maui", "--pre"]);
+
+    config.AddCommand<MetaCommand>("meta")
+        .WithDescription("Show metadata about the ScatGirl CLI tool, including version and build information.");
 });
 
 return await app.RunAsync(args);
