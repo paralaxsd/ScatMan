@@ -13,5 +13,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Max line length: **100 characters**.
 - Use **strategic blank lines** to separate logical blocks, error handling, and return statements.
 
+## MCP Server
+- `builder.Logging.ClearProviders()` is required in Program.cs — default console logger writes to stdout and corrupts the JSON-RPC channel
+- Register with `claude mcp add --scope user` — the VS Code extension's claude.exe subprocess only reads top-level `mcpServers`, not project-scoped entries
+
 ## Git
 - **No conventional commits** — no `feat:`, `fix:`, `chore:` prefixes. Plain imperative subject line, capitalize first word.

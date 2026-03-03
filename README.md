@@ -146,6 +146,46 @@ Packages and their transitive dependencies are cached in `~/.scatman/cache/` aft
 
 ---
 
+## MCP Server
+
+ScatMan ships as an **MCP stdio server** — use it directly from Claude Code, Claude Desktop, or any MCP-compatible client without ever opening a terminal.
+
+```bash
+dotnet tool install --global ScatMan.Mcp
+```
+
+### Claude Code
+
+```bash
+claude mcp add --scope user -t stdio ScatMan scatman-mcp
+```
+
+> `--scope user` is required so the server is available globally, not just within one project directory.
+
+### Claude Desktop
+
+`~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "scatman": {
+      "command": "scatman-mcp"
+    }
+  }
+}
+```
+
+### Available tools
+
+| Tool | Description |
+|---|---|
+| `get_versions` | List available versions of a package (`packageId`, `includePrerelease?`) |
+| `get_types` | List all public types (`packageId`, `version`, `ns?`) |
+| `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`) |
+
+---
+
 ## Roadmap
 
 | Command | Description | Status |
@@ -155,7 +195,7 @@ Packages and their transitive dependencies are cached in `~/.scatman/cache/` aft
 | `types <pkg> <ver>` | List all public types (optional `--namespace`) | ✅ done |
 | `members <pkg> <ver> <type>` | List all public members of a type | ✅ done |
 | `search <pkg> <ver> <query>` | Search types and members by name | 🔲 todo |
-| `serve` | Expose everything as an MCP stdio server | 🔲 todo (Phase 2) |
+| `serve` | Expose everything as an MCP stdio server | ✅ done (Phase 2) |
 
 ---
 
@@ -163,4 +203,4 @@ Packages and their transitive dependencies are cached in `~/.scatman/cache/` aft
 
 - **ScatMan.Core** — NuGet download + `MetadataLoadContext` inspection. No UI. Usable as a standalone library.
 - **ScatMan.Cli** — `dotnet tool`, Spectre.Console.Cli for argument parsing and output.
-- **ScatMan.Mcp** — MCP stdio server (Phase 2), also powered by Core.
+- **ScatMan.Mcp** — MCP stdio server, powered by Core. Installable as `dotnet tool install -g ScatMan.Mcp`.
