@@ -6,19 +6,6 @@
     <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  <!-- NuGet package metadata (ignored for non-packable projects) -->
-  <PropertyGroup>
-    <Authors>Paralax^Speckdrumm; Claude Sonnet</Authors>
-    <Company>Speckdrumm</Company>
-    <Copyright>© Speckdrumm 2026</Copyright>
-    <RepositoryUrl>https://github.com/paralaxsd/ScatMan</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <!-- XML docs: -->
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
   <!-- Include root README.md in NuGet packages -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\"
