@@ -1,25 +1,67 @@
 namespace ScatMan.Core;
 
+/// <summary>
+/// Describes a constructor parameter.
+/// </summary>
 public record ParameterDescriptor(string Name, string TypeName);
-public record ConstructorSignature(IReadOnlyList<ParameterDescriptor> Parameters);
-public record MemberDescriptor(string Name, string Kind, string Signature);
-public record TypeDescriptor(string FullName, string Name, string Namespace, string Kind);
 
+/// <summary>
+/// Represents a public constructor signature.
+/// </summary>
+public record ConstructorSignature(IReadOnlyList<ParameterDescriptor> Parameters);
+
+/// <summary>
+/// Represents a public member and its formatted signature.
+/// </summary>
+public record MemberDescriptor(
+    string Name,
+    string Kind,
+    string Signature,
+    string? Summary = null);
+
+/// <summary>
+/// Describes a public type found in inspected assemblies.
+/// </summary>
+public record TypeDescriptor(
+    string FullName,
+    string Name,
+    string Namespace,
+    string Kind,
+    string? Summary = null);
+
+/// <summary>
+/// Contains package version metadata from NuGet registration.
+/// </summary>
 public record PackageVersionInfo(
     string Version, DateTimeOffset Published, bool IsPrerelease);
 
+/// <summary>
+/// Represents a matching member hit, including owning type information.
+/// </summary>
 public record MemberSearchHit(
     string TypeFullName, string TypeName, MemberDescriptor Member);
 
+/// <summary>
+/// Bundles type and member search results.
+/// </summary>
 public record SearchHits(
     IReadOnlyList<TypeDescriptor> Types, IReadOnlyList<MemberSearchHit> Members);
 
+/// <summary>
+/// Thrown when a requested type cannot be found in downloaded assemblies.
+/// </summary>
 public sealed class TypeNotFoundException(string typeName)
     : Exception($"Type '{typeName}' not found in the downloaded assemblies.");
 
+/// <summary>
+/// Thrown when a requested package does not exist on NuGet.
+/// </summary>
 public sealed class PackageNotFoundException(string packageId)
     : Exception($"Package '{packageId}' not found on NuGet.");
 
+/// <summary>
+/// Build and runtime metadata for CLI and MCP diagnostics.
+/// </summary>
 public record MetaInfo(
     string Version, string Configuration, DateTime CommitDate,
     bool IsPublic, string OS, string DotNetVersion);

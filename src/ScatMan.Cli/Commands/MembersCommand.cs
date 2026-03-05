@@ -15,6 +15,14 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
         [CommandArgument(2, "<typeName>")]
         [Description("Full or simple type name")]
         public string TypeName { get; init; } = "";
+
+        [CommandOption("--no-default-values")]
+        [Description("Do not include optional parameter default values in method signatures")]
+        public bool NoDefaultValues { get; init; }
+
+        [CommandOption("--include-attributes")]
+        [Description("Include member and parameter attributes in signatures")]
+        public bool IncludeAttributes { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
@@ -23,7 +31,11 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
 
         try
         {
-            var members = new TypeInspector().GetMembers(assemblies, settings.TypeName);
+            var members = new TypeInspector().GetMembers(
+                assemblies,
+                settings.TypeName,
+                includeDefaultValues: !settings.NoDefaultValues,
+                includeAttributes: settings.IncludeAttributes);
 
             if (settings.Json) PrintJson(members, settings);
             else PrintFormatted(members, settings);
@@ -44,7 +56,7 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
             package = settings.Package,
             version = settings.Version,
             typeName = settings.TypeName,
-            members = members.Select(m => new { m.Name, m.Kind, m.Signature })
+            members = members.Select(m => new { m.Name, m.Kind, m.Signature, m.Summary })
         };
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
@@ -59,7 +71,12 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
             AnsiConsole.MarkupLine($"[grey]{label}[/]");
 
             foreach (var m in group)
+            {
                 PrintSignature(m.Signature);
+
+                if (m.Summary is { Length: > 0 } summary)
+                    AnsiConsole.MarkupLine($"    [grey]{Markup.Escape(summary)}[/]");
+            }
 
             AnsiConsole.WriteLine();
         }

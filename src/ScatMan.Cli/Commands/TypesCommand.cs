@@ -43,7 +43,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
             version    = settings.Version,
             @namespace = settings.Namespace,
             filter     = settings.Filter,
-            types      = types.Select(t => new { t.FullName, t.Kind })
+            types      = types.Select(t => new { t.FullName, t.Kind, t.Summary })
         };
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
@@ -60,7 +60,12 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
             AnsiConsole.MarkupLine($"[grey]{Markup.Escape(group.Key)}[/]");
 
             foreach (var t in group)
+            {
                 AnsiConsole.MarkupLine($"  [cyan]{t.Kind.PadRight(9)}[/]  {Markup.Escape(t.Name)}");
+
+                if (t.Summary is { Length: > 0 } summary)
+                    AnsiConsole.MarkupLine($"             [grey]{Markup.Escape(summary)}[/]");
+            }
 
             AnsiConsole.WriteLine();
         }

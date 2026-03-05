@@ -7,11 +7,21 @@ using System.IO.Compression;
 
 namespace ScatMan.Core;
 
+/// <summary>
+/// Downloads a NuGet package and its dependencies and returns assembly paths for inspection.
+/// </summary>
 public sealed class PackageDownloader(string? cacheRoot = null)
 {
     readonly string _cacheRoot = cacheRoot
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scatman", "cache");
 
+    /// <summary>
+    /// Downloads package assets and resolves transitive dependencies.
+    /// </summary>
+    /// <param name="packageId">NuGet package ID.</param>
+    /// <param name="version">Exact package version.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Assembly paths from the selected target framework of each package.</returns>
     public async Task<IReadOnlyList<string>> DownloadAsync(
         string packageId, string version, CancellationToken ct = default)
     {

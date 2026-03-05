@@ -4,6 +4,9 @@ using System.Text.Json.Serialization;
 
 namespace ScatMan.Core;
 
+/// <summary>
+/// Reads package version metadata from NuGet registration endpoints.
+/// </summary>
 public sealed class NuGetRegistrationClient
 {
     static readonly HttpClient Http = new(new HttpClientHandler
@@ -15,6 +18,15 @@ public sealed class NuGetRegistrationClient
     const string SemVer1Url = "https://api.nuget.org/v3/registration5-semver1";
     const string SemVer2Url = "https://api.nuget.org/v3/registration5-gz-semver2";
 
+    /// <summary>
+    /// Returns listed package versions from SemVer1 and SemVer2 registration feeds.
+    /// </summary>
+    /// <param name="packageId">NuGet package ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Versions ordered by published date descending.</returns>
+    /// <exception cref="PackageNotFoundException">
+    /// Thrown when the package does not exist in NuGet registration.
+    /// </exception>
     public async Task<IReadOnlyList<PackageVersionInfo>> GetVersionsAsync(
         string packageId, CancellationToken ct = default)
     {

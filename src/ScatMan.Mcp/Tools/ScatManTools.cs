@@ -67,7 +67,14 @@ static class ScatManTools
             @namespace = ns,
             filter,
             count      = types.Count,
-            types      = types.Select(t => new { t.FullName, t.Name, t.Namespace, t.Kind })
+            types      = types.Select(t => new
+            {
+                t.FullName,
+                t.Name,
+                t.Namespace,
+                t.Kind,
+                t.Summary
+            })
         });
     }
 
@@ -93,14 +100,22 @@ static class ScatManTools
             version,
             query,
             @namespace     = ns,
-            matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Name, t.Namespace, t.Kind }),
+            matchingTypes  = hits.Types.Select(t => new
+            {
+                t.FullName,
+                t.Name,
+                t.Namespace,
+                t.Kind,
+                t.Summary
+            }),
             matchingMembers = hits.Members.Select(h => new
             {
                 h.TypeName,
                 h.TypeFullName,
                 h.Member.Kind,
                 h.Member.Name,
-                h.Member.Signature
+                h.Member.Signature,
+                h.Member.Summary
             })
         });
     }
@@ -113,13 +128,24 @@ static class ScatManTools
         [Description("NuGet package ID")] string packageId,
         [Description("Package version")] string version,
         [Description("Full or simple type name, e.g. \"WasapiCapture\" or \"NAudio.CoreAudioApi.WasapiCapture\"")] string typeName,
+        [Description("Include optional parameter default values in signatures (default: true)")]
+        bool includeDefaultValues = true,
+        [Description("Include member and parameter attributes in signatures (default: false)")]
+        bool includeAttributes = false,
         CancellationToken ct = default)
     {
         var assemblies = await FetchAssembliesAsync(packageId, version, ct);
         if (assemblies is null) return Error($"Package {packageId} {version} not found.");
 
         IReadOnlyList<CoreMemberDescriptor> members;
-        try   { members = new TypeInspector().GetMembers(assemblies, typeName); }
+        try
+        {
+            members = new TypeInspector().GetMembers(
+                assemblies,
+                typeName,
+                includeDefaultValues,
+                includeAttributes);
+        }
         catch (TypeNotFoundException ex) { return Error(ex.Message); }
 
         return Serialize(new
@@ -127,8 +153,10 @@ static class ScatManTools
             package  = packageId,
             version,
             typeName,
+            includeDefaultValues,
+            includeAttributes,
             count   = members.Count,
-            members = members.Select(m => new { m.Kind, m.Name, m.Signature })
+            members = members.Select(m => new { m.Kind, m.Name, m.Signature, m.Summary })
         });
     }
 

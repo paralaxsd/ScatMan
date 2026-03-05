@@ -39,12 +39,13 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
             version        = settings.Version,
             query          = settings.Query,
             @namespace     = settings.Namespace,
-            matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Kind }),
+            matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Kind, t.Summary }),
             matchingMembers = hits.Members.Select(h => new
             {
                 h.TypeName,
                 h.Member.Kind,
-                h.Member.Signature
+                h.Member.Signature,
+                h.Member.Summary
             })
         };
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
@@ -61,7 +62,12 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
             AnsiConsole.MarkupLine("  [yellow](none)[/]");
         else
             foreach (var t in hits.Types)
+            {
                 AnsiConsole.MarkupLine($"  [cyan]{t.Kind.PadRight(9)}[/]  {Markup.Escape(t.FullName)}");
+
+                if (t.Summary is { Length: > 0 } summary)
+                    AnsiConsole.MarkupLine($"             [grey]{Markup.Escape(summary)}[/]");
+            }
 
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[bold]Members ({hits.Members.Count})[/]");
@@ -76,7 +82,12 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
         {
             AnsiConsole.MarkupLine($"  [grey]{Markup.Escape(group.Key)}[/]");
             foreach (var h in group)
+            {
                 AnsiConsole.MarkupLine($"    [cyan]{h.Member.Kind.PadRight(11)}[/]  {Markup.Escape(h.Member.Signature)}");
+
+                if (h.Member.Summary is { Length: > 0 } summary)
+                    AnsiConsole.MarkupLine($"                 [grey]{Markup.Escape(summary)}[/]");
+            }
         }
     }
 }
