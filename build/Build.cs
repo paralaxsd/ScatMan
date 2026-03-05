@@ -1,18 +1,22 @@
 using Nuke.Common;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.IO;
-using Nuke.Common.Tools.DotNet;
-using System.Linq;
+using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DotNet;
+using Serilog;
+using System;
+using System.IO;
+using System.Linq;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 // ReSharper disable UnusedMember.Local
 // ReSharper disable AllUnderscoreLocalParameterName
 
-[GitHubActions("ci",
+[GitHubActions("test",
     GitHubActionsImage.UbuntuLatest,
     On = [GitHubActionsTrigger.Push, GitHubActionsTrigger.WorkflowDispatch],
     FetchDepth = 0,  // full history required for Nerdbank.GitVersioning
-    InvokedTargets = [nameof(Compile)])]
+    InvokedTargets = [nameof(Test)])]
 class Build : NukeBuild
 {
     /******************************************************************************************
@@ -24,14 +28,16 @@ class Build : NukeBuild
     [Parameter("NuGet API key for publishing"), Secret]
     readonly string? NuGetApiKey;
 
+    [Solution("ScatMan.slnx")] readonly Solution Solution = null!;
+
     /******************************************************************************************
      * PROPERTIES
      * ***************************************************************************************/
     AbsolutePath ArtifactsDir => RootDirectory / "artifacts";
-    AbsolutePath SolutionFile  => RootDirectory / "ScatMan.slnx";
     AbsolutePath CliProject    => RootDirectory / "src" / "ScatMan.Cli" / "ScatMan.Cli.csproj";
     AbsolutePath McpProject    => RootDirectory / "src" / "ScatMan.Mcp" / "ScatMan.Mcp.csproj";
     AbsolutePath CoreProject => RootDirectory / "src" / "ScatMan.Core" / "ScatMan.Core.csproj";
+    AbsolutePath CoverageDir => RootDirectory / "coverage";
 
     Target Clean => _ => _
         .Before(Restore)
@@ -39,14 +45,33 @@ class Build : NukeBuild
 
     Target Restore => _ => _
         .Executes(() => DotNetRestore(s => s
-            .SetProjectFile(SolutionFile)));
+            .SetProjectFile(Solution)));
 
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() => DotNetBuild(s => s
-            .SetProjectFile(SolutionFile)
+            .SetProjectFile(Solution)
             .SetConfiguration(Configuration)
             .EnableNoRestore()));
+    
+    Target Test => _ => _
+        .Description("Build and run all test projects discovered under tests/")
+        .Produces(CoverageDir / "report")
+        .DependsOn(Compile)
+        .Executes(() =>
+        {
+            var testProjects = Solution.GetAllProjects("*Tests");
+            DotNetTest(s => s
+                .SetConfiguration(Configuration)
+                .EnableNoBuild()
+                .AddLoggers("GitHubActions")
+                .SetResultsDirectory(CoverageDir)
+                .AddProcessAdditionalArguments("--collect:\"XPlat Code Coverage\"")
+                .CombineWith(testProjects, (cs, project) => cs
+                    .SetProjectFile(project)));
+
+            PublishCoverageReport();
+        });
 
     Target Pack => _ => _
         .DependsOn(Compile)
@@ -82,5 +107,25 @@ class Build : NukeBuild
     /******************************************************************************************
      * METHODS
      * ***************************************************************************************/
+    void PublishCoverageReport()
+    {
+        var coberturaFiles = CoverageDir.GlobFiles("**/coverage.cobertura.xml");
+        if (coberturaFiles.Count == 0)
+        {
+            Log.Warning("No Cobertura coverage files found — skipping report generation.");
+            return;
+        }
+
+        DotNet("tool restore");
+
+        var reportDir = CoverageDir / "report";
+        var reports = string.Join(";", coberturaFiles.Select(f => f.ToString()));
+        DotNet($"tool run reportgenerator -- -reports:\"{reports}\" -targetdir:\"{reportDir}\" -reporttypes:MarkdownSummaryGithub;Html");
+
+        var summaryFile = Environment.GetEnvironmentVariable("GITHUB_STEP_SUMMARY");
+        if (summaryFile is { } && File.Exists(reportDir / "SummaryGithub.md"))
+            File.AppendAllText(summaryFile, "\n\n" + File.ReadAllText(reportDir / "SummaryGithub.md"));
+    }
+
     public static int Main() => Execute<Build>(x => x.Compile);
 }

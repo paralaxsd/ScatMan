@@ -26,7 +26,10 @@
     <Project Path="src/ScatMan.Core/ScatMan.Core.csproj" />
     <Project Path="src/ScatMan.Mcp/ScatMan.Mcp.csproj" />
   </Folder>
-  <Folder Name="/2 build/">
+  <Folder Name="/2 tests/">
+    <Project Path="tests/ScatMan.Core.Tests/ScatMan.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/3 build/">
     <Project Path="build/ScatMan.Build.csproj">
       <Build Project="false" />
     </Project>

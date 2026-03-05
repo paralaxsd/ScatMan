@@ -28,7 +28,8 @@
         "Compile",
         "Pack",
         "Push",
-        "Restore"
+        "Restore",
+        "Test"
       ]
     },
     "Verbosity": {
@@ -114,6 +115,10 @@
           "type": "string",
           "description": "NuGet API key for publishing",
           "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
+        "Solution": {
+          "type": "string",
+          "description": "Path to a solution file that is automatically loaded. Default is ScatMan.slnx"
         }
       }
     },

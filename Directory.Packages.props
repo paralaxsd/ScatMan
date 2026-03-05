@@ -18,5 +18,12 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
     <!-- ScatMan.Build -->
     <PackageVersion Include="Nuke.Common" Version="10.1.0" />
+    <!-- ScatMan.Core.Tests -->
+    <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageVersion Include="Shouldly" Version="4.3.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
 </Project>
