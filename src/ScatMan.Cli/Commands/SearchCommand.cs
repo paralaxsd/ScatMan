@@ -12,11 +12,11 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
     public sealed class Settings : PackageSettings
     {
         [CommandArgument(2, "<query>")]
-        [Description("Case-insensitive substring to search for in type and member names")]
+        [Description("Name query: glob pattern or plain case-insensitive substring")]
         public string Query { get; init; } = "";
 
         [CommandOption("-n|--namespace")]
-        [Description("Restrict search to this namespace")]
+        [Description("Namespace filter: exact or glob pattern")]
         public string? Namespace { get; init; }
     }
 
@@ -33,21 +33,18 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
 
     static void PrintJson(SearchHits hits, Settings settings, string resolvedVersion)
     {
-        var result = new
-        {
-            package        = settings.Package,
-            version        = resolvedVersion,
-            query          = settings.Query,
-            @namespace     = settings.Namespace,
-            matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Kind, t.Summary }),
-            matchingMembers = hits.Members.Select(h => new
-            {
+        var result = new SearchResult(
+            settings.Package,
+            resolvedVersion,
+            settings.Query,
+            settings.Namespace,
+            [.. hits.Types.Select(t => new SearchTypeResult(t.FullName, t.Kind, t.Summary))],
+            [.. hits.Members.Select(h => new SearchMemberResult(
                 h.TypeName,
                 h.Member.Kind,
                 h.Member.Signature,
-                h.Member.Summary
-            })
-        };
+                h.Member.Summary))]);
+
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 

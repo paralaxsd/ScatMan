@@ -51,7 +51,7 @@ Use `--head N` to show only the N most recent versions; the header will read `N 
 ### `types` — list all public types in a package
 
 ```bash
-scatman types <package> <version> [--namespace <ns>] [--filter <substring>]
+scatman types <package> <version> [--namespace <nsOrGlob>] [--filter <nameOrGlob>]
 ```
 
 `<version>` also accepts aliases: `latest` and `latest-pre`.
@@ -68,14 +68,23 @@ NAudio.CoreAudioApi
   class      WasapiCapture
 ```
 
-`--filter` is a case-insensitive substring match on the type name, combinable with `--namespace`.
+`--namespace` supports exact namespace or glob pattern.
+`--filter` supports glob pattern; plain text remains a case-insensitive substring match.
+
+Glob syntax follows `Microsoft.Extensions.FileSystemGlobbing`.
+Common tokens: `*`, `?`, `[abc]`, `{foo,bar}`.
+
+Examples:
+- `--namespace "ScatMan.*"`
+- `--namespace "*.Core"`
+- `--filter "*Capture*"`
 
 ---
 
 ### `search` — search types and members across a package
 
 ```bash
-scatman search <package> <version> <query> [--namespace <ns>]
+scatman search <package> <version> <queryOrGlob> [--namespace <nsOrGlob>]
 ```
 
 `<version>` also accepts aliases: `latest` and `latest-pre`.
@@ -95,8 +104,10 @@ Members (1)
     method       static MMDevice GetDefaultCaptureDevice()
 ```
 
-Cross-type substring search — useful when you know a method name exists somewhere in the package
+Cross-type search — useful when you know a method name exists somewhere in the package
 but not which type owns it. Both type names and member names are searched.
+
+`<query>` accepts glob patterns. Plain text is still treated as case-insensitive substring.
 
 ---
 
@@ -215,6 +226,9 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 
 For MCP tools using a `version` parameter, aliases are supported as well:
 `latest` (latest stable, fallback latest if no stable exists) and `latest-pre`.
+
+For MCP tools with `ns`, `filter`, or `query`, glob syntax follows
+`Microsoft.Extensions.FileSystemGlobbing` (`*`, `?`, `[abc]`, `{foo,bar}`).
 
 ---
 

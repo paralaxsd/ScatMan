@@ -214,7 +214,7 @@ public sealed class PackageDownloader(string? cacheRoot = null)
         }
 
         var bestRank = allDirs.Max(BaseRank);
-        var bestDirs = allDirs.Where(d => BaseRank(d) == bestRank);
+        var bestDirs = allDirs.Where(d => BaseRank(d) == bestRank).ToArray();
 
         // Deduplicate by filename; platform-specific overrides portable so we include
         // platform extension methods while avoiding duplicate assembly loads in MLC.

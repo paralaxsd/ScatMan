@@ -48,8 +48,14 @@ static class ScatManTools
     static async Task<string> GetTypes(
         [Description("NuGet package ID")] string packageId,
         [Description("Package version, or alias: latest / latest-pre")] string version,
-        [Description("Filter by namespace (optional)")] string? ns = null,
-        [Description("Case-insensitive substring filter on type name (optional)")] string? filter = null,
+        [Description(
+            "Namespace filter (exact or glob, optional). " +
+            "Glob syntax follows Microsoft.Extensions.FileSystemGlobbing.")]
+        string? ns = null,
+        [Description(
+            "Type-name filter (glob optional). " +
+            "Plain text is case-insensitive substring.")]
+        string? filter = null,
         CancellationToken ct = default)
     {
         string resolvedVersion;
@@ -62,25 +68,23 @@ static class ScatManTools
         var types = new TypeInspector().GetTypes(assemblies, ns);
 
         if (filter is not null)
-            types = [.. types.Where(t => t.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))];
+            types = [.. types.Where(t => PatternFilters.MatchesSubstringOrGlob(t.Name, filter))];
 
-        return Serialize(new
-        {
-            package    = packageId,
-            requestedVersion = version,
-            version = resolvedVersion,
-            @namespace = ns,
+        var result = new GetTypesResult(
+            packageId,
+            version,
+            resolvedVersion,
+            ns,
             filter,
-            count      = types.Count,
-            types      = types.Select(t => new
-            {
+            types.Count,
+            [.. types.Select(t => new MappedType(
                 t.FullName,
                 t.Name,
                 t.Namespace,
                 t.Kind,
-                t.Summary
-            })
-        });
+                t.Summary))]);
+
+        return Serialize(result);
     }
 
     [McpServerTool(Name = "search")]
@@ -90,8 +94,8 @@ static class ScatManTools
     static async Task<string> Search(
         [Description("NuGet package ID")] string packageId,
         [Description("Package version, or alias: latest / latest-pre")] string version,
-        [Description("Case-insensitive substring to search for in type and member names")] string query,
-        [Description("Restrict search to this namespace (optional)")] string? ns = null,
+        [Description("Name query: glob pattern or plain case-insensitive substring")] string query,
+        [Description("Namespace filter (exact or glob, optional)")] string? ns = null,
         CancellationToken ct = default)
     {
         string resolvedVersion;
@@ -103,31 +107,27 @@ static class ScatManTools
 
         var hits = new TypeInspector().Search(assemblies, query, ns);
 
-        return Serialize(new
-        {
-            package        = packageId,
-            requestedVersion = version,
-            version = resolvedVersion,
+        var result = new SearchResult(
+            packageId,
+            version,
+            resolvedVersion,
             query,
-            @namespace     = ns,
-            matchingTypes  = hits.Types.Select(t => new
-            {
+            ns,
+            [.. hits.Types.Select(t => new MappedType(
                 t.FullName,
                 t.Name,
                 t.Namespace,
                 t.Kind,
-                t.Summary
-            }),
-            matchingMembers = hits.Members.Select(h => new
-            {
+                t.Summary))],
+            [.. hits.Members.Select(h => new MappedMember(
                 h.TypeName,
                 h.TypeFullName,
                 h.Member.Kind,
                 h.Member.Name,
                 h.Member.Signature,
-                h.Member.Summary
-            })
-        });
+                h.Member.Summary))]);
+
+        return Serialize(result);
     }
 
     [McpServerTool(Name = "get_members")]
@@ -162,17 +162,17 @@ static class ScatManTools
         }
         catch (TypeNotFoundException ex) { return Error(ex.Message); }
 
-        return Serialize(new
-        {
-            package  = packageId,
-            requestedVersion = version,
-            version = resolvedVersion,
+        var result = new GetMembersResult(
+            packageId,
+            version,
+            resolvedVersion,
             typeName,
             includeDefaultValues,
             includeAttributes,
-            count   = members.Count,
-            members = members.Select(m => new { m.Kind, m.Name, m.Signature, m.Summary })
-        });
+            members.Count,
+            [.. members.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))]);
+
+        return Serialize(result);
     }
 
     [McpServerTool(Name = "meta")]
@@ -192,23 +192,12 @@ static class ScatManTools
         string version,
         CancellationToken ct)
     {
-        if (!version.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
-            !version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
-            return version;
-
-        var versions = await new NuGetRegistrationClient().GetVersionsAsync(packageId, ct);
-        if (versions.Count == 0)
-            throw new PackageNotFoundException(packageId);
-
-        if (version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
-            return versions[0].Version;
-
-        var stable = versions.FirstOrDefault(v => !v.IsPrerelease);
-        return stable?.Version ?? versions[0].Version;
+        return await PackageVersionResolver.ResolveAsync(packageId, version, ct);
     }
 
     static string Serialize(object value) => JsonSerializer.Serialize(value, JsonOptions);
 
     static string Error(string message) =>
         JsonSerializer.Serialize(new { error = message }, JsonOptions);
+
 }

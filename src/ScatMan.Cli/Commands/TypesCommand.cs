@@ -1,10 +1,10 @@
-using System.ComponentModel;
-using System.Text.Json;
-using ScatMan.Cli;
 using ScatMan.Core;
-using TypeDescriptor = ScatMan.Core.TypeDescriptor;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Text.Json;
+using TypeDescriptor = ScatMan.Core.TypeDescriptor;
+// ReSharper disable All
 
 namespace ScatMan.Cli.Commands;
 
@@ -13,11 +13,11 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
     public sealed class Settings : PackageSettings
     {
         [CommandOption("-n|--namespace")]
-        [Description("Filter by namespace")]
+        [Description("Namespace filter: exact or glob pattern (Microsoft.Extensions.FileSystemGlobbing)")]
         public string? Namespace { get; init; }
 
         [CommandOption("-f|--filter")]
-        [Description("Case-insensitive substring filter on type name")]
+        [Description("Type-name filter: glob pattern; plain text stays case-insensitive substring")]
         public string? Filter { get; init; }
     }
 
@@ -27,7 +27,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         var types      = new TypeInspector().GetTypes(assemblies, settings.Namespace);
 
         if (settings.Filter is { } f)
-            types = [.. types.Where(t => t.Name.Contains(f, StringComparison.OrdinalIgnoreCase))];
+            types = [.. types.Where(t => TypeFilterMatches(t.Name, f))];
 
         if (settings.Json) PrintJson(types, settings, resolvedVersion);
         else PrintFormatted(types, settings, resolvedVersion);
@@ -40,14 +40,13 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         Settings settings,
         string resolvedVersion)
     {
-        var result = new
-        {
-            package    = settings.Package,
-            version    = resolvedVersion,
-            @namespace = settings.Namespace,
-            filter     = settings.Filter,
-            types      = types.Select(t => new { t.FullName, t.Kind, t.Summary })
-        };
+        var result = new TypesResult(
+            settings.Package,
+            resolvedVersion,
+            settings.Namespace,
+            settings.Filter,
+            [.. types.Select(t => new TypeResult(t.FullName, t.Kind, t.Summary))]);
+
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 
@@ -79,4 +78,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         if (types.Count == 0)
             AnsiConsole.MarkupLine("  [yellow](no public types found)[/]");
     }
+
+    static bool TypeFilterMatches(string typeName, string filter) => 
+        PatternFilters.MatchesSubstringOrGlob(typeName, filter);
 }

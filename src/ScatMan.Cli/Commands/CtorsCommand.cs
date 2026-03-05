@@ -41,16 +41,13 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
         Settings settings,
         string resolvedVersion)
     {
-        var result = new
-        {
-            package = settings.Package,
-            version = resolvedVersion,
-            typeName = settings.TypeName,
-            constructors = ctors.Select(c => new
-            {
-                parameters = c.Parameters.Select(p => new { p.Name, p.TypeName })
-            })
-        };
+        var result = new CtorsResult(
+            settings.Package,
+            resolvedVersion,
+            settings.TypeName,
+            [.. ctors.Select(c => new ConstructorResult(
+                [.. c.Parameters.Select(p => new ParameterResult(p.Name, p.TypeName))]))]);
+
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 

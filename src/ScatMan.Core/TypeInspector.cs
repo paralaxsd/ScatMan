@@ -61,7 +61,7 @@ public sealed class TypeInspector
     }
 
     /// <summary>
-    /// Searches public type and member names by case-insensitive substring.
+    /// Searches public type and member names by glob pattern or case-insensitive substring.
     /// </summary>
     /// <param name="assemblyPaths">Assembly paths to inspect.</param>
     /// <param name="query">Case-insensitive search text.</param>
@@ -85,7 +85,7 @@ public sealed class TypeInspector
                 try   { allTypes = asm.GetTypes(); }
                 catch (ReflectionTypeLoadException ex) { allTypes = [.. ex.Types.OfType<Type>()]; }
 
-                foreach (var t in allTypes.Where(t => t.IsPublic && (ns is null || t.Namespace == ns)))
+                foreach (var t in allTypes.Where(t => t.IsPublic && NamespaceMatches(t.Namespace, ns)))
                 {
                     var descriptor = new TypeDescriptor(
                         (t.FullName ?? t.Name).Replace('+', '.'),
@@ -94,7 +94,7 @@ public sealed class TypeInspector
                         GetTypeKind(t),
                         docs.GetTypeSummary(t));
 
-                    if (t.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    if (PatternFilters.MatchesSubstringOrGlob(t.Name, query))
                         matchingTypes.Add(descriptor);
 
                     try
@@ -105,7 +105,7 @@ public sealed class TypeInspector
                                     includeDefaultValues: true,
                                     includeAttributes: false,
                                     docs)
-                                .Where(m => m.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                                .Where(m => PatternFilters.MatchesSubstringOrGlob(m.Name, query))
                                 .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m)));
                     }
                     catch
@@ -150,7 +150,7 @@ public sealed class TypeInspector
                 catch (ReflectionTypeLoadException ex) { allTypes = [.. ex.Types.OfType<Type>()]; }
 
                 types.AddRange(allTypes
-                    .Where(t => t.IsPublic && (ns is null || t.Namespace == ns))
+                    .Where(t => t.IsPublic && NamespaceMatches(t.Namespace, ns))
                     .Select(t => new TypeDescriptor(
                         (t.FullName ?? t.Name).Replace('+', '.'),
                         t.Name,
@@ -166,6 +166,9 @@ public sealed class TypeInspector
 
         return [.. types.OrderBy(t => t.Namespace).ThenBy(t => t.Name)];
     }
+
+    static bool NamespaceMatches(string? typeNamespace, string? filterNamespace) => 
+        PatternFilters.MatchesExactOrGlob(typeNamespace, filterNamespace);
 
     static IReadOnlyList<MemberDescriptor> GetMembersFromType(
         Type type,

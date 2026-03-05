@@ -54,13 +54,12 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
         Settings settings,
         string resolvedVersion)
     {
-        var result = new
-        {
-            package = settings.Package,
-            version = resolvedVersion,
-            typeName = settings.TypeName,
-            members = members.Select(m => new { m.Name, m.Kind, m.Signature, m.Summary })
-        };
+        var result = new MembersResult(
+            settings.Package,
+            resolvedVersion,
+            settings.TypeName,
+            [.. members.Select(m => new MemberResult(m.Name, m.Kind, m.Signature, m.Summary))]);
+
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 

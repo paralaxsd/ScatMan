@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- ScatMan.Core -->
+    <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.103" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
