@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ScatMan.Core;
@@ -9,6 +8,10 @@ namespace ScatMan.Core;
 /// </summary>
 public sealed class TypeInspector
 {
+    /******************************************************************************************
+     * METHODS
+     * ***************************************************************************************/
+
     /// <summary>
     /// Returns public instance constructors of a type.
     /// </summary>
@@ -21,10 +24,12 @@ public sealed class TypeInspector
     public IReadOnlyList<ConstructorSignature> GetConstructors(
         IReadOnlyList<string> assemblyPaths, string typeName)
     {
-        using var mlc = CreateContext(assemblyPaths);
+        using var inspectionCtxt = new TypeInspectionContext(assemblyPaths);
 
-        var type = FindType(mlc, assemblyPaths, typeName)
+        var type = FindType(inspectionCtxt.LoadCtxt, assemblyPaths, typeName)
             ?? throw new TypeNotFoundException(typeName);
+
+        // TODO:  use doc provider to get parameter summaries
 
         return [.. type
             .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
@@ -51,13 +56,12 @@ public sealed class TypeInspector
         bool includeDefaultValues = true,
         bool includeAttributes = false)
     {
-        using var mlc = CreateContext(assemblyPaths);
-        var docs = XmlDocumentationProvider.Load(assemblyPaths);
+        using var inspectionCtxt = new TypeInspectionContext(assemblyPaths);
 
-        var type = FindType(mlc, assemblyPaths, typeName)
+        var type = FindType(inspectionCtxt.LoadCtxt, assemblyPaths, typeName)
             ?? throw new TypeNotFoundException(typeName);
 
-        return GetMembersFromType(type, includeDefaultValues, includeAttributes, docs);
+        return GetMembersFromType(type, includeDefaultValues, includeAttributes, inspectionCtxt.DocProvider);
     }
 
     /// <summary>
@@ -69,55 +73,42 @@ public sealed class TypeInspector
     /// <returns>Type and member matches.</returns>
     public SearchHits Search(IReadOnlyList<string> assemblyPaths, string query, string? ns = null)
     {
-        using var mlc = CreateContext(assemblyPaths);
-        var docs = XmlDocumentationProvider.Load(assemblyPaths);
+        using var inspectionCtxt = new TypeInspectionContext(assemblyPaths);
 
-        var matchingTypes   = new List<TypeDescriptor>();
+        var matchingTypes = new List<TypeDescriptor>();
         var matchingMembers = new List<MemberSearchHit>();
 
-        foreach (var path in assemblyPaths)
+        try
         {
-            try
+            var descriptors = GetTypes(assemblyPaths, ns, inspectionCtxt);
+
+            foreach (var descriptor in descriptors)
             {
-                var asm = mlc.LoadFromAssemblyPath(path);
+                if (PatternFilters.MatchesSubstringOrGlob(descriptor.Name, query))
+                    matchingTypes.Add(descriptor);
 
-                Type[] allTypes;
-                try   { allTypes = asm.GetTypes(); }
-                catch (ReflectionTypeLoadException ex) { allTypes = [.. ex.Types.OfType<Type>()]; }
-
-                foreach (var t in allTypes.Where(t => t.IsPublic && NamespaceMatches(t.Namespace, ns)))
+                try
                 {
-                    var descriptor = new TypeDescriptor(
-                        (t.FullName ?? t.Name).Replace('+', '.'),
-                        t.Name,
-                        t.Namespace ?? "",
-                        GetTypeKind(t),
-                        docs.GetTypeSummary(t));
+                    var memberHits = GetMembersFromType(
+                            descriptor.Type,
+                            includeDefaultValues: true,
+                            includeAttributes: false,
+                            inspectionCtxt.DocProvider)
+                        .Where(m => PatternFilters.MatchesSubstringOrGlob(m.Name, query))
+                        .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m))
+                        .ToArray();
 
-                    if (PatternFilters.MatchesSubstringOrGlob(t.Name, query))
-                        matchingTypes.Add(descriptor);
-
-                    try
-                    {
-                        matchingMembers.AddRange(
-                                GetMembersFromType(
-                                    t,
-                                    includeDefaultValues: true,
-                                    includeAttributes: false,
-                                    docs)
-                                .Where(m => PatternFilters.MatchesSubstringOrGlob(m.Name, query))
-                                .Select(m => new MemberSearchHit(descriptor.FullName, descriptor.Name, m)));
-                    }
-                    catch
-                    {
-                        // ignored — type references unavailable assemblies
-                    }
+                    matchingMembers.AddRange(memberHits);
+                }
+                catch
+                {
+                    // ignored — type references unavailable assemblies
                 }
             }
-            catch
-            {
-                // ignored
-            }
+        }
+        catch
+        {
+            // ignored
         }
 
         return new SearchHits(
@@ -130,45 +121,66 @@ public sealed class TypeInspector
     /// </summary>
     /// <param name="assemblyPaths">Assembly paths to inspect.</param>
     /// <param name="ns">Optional namespace filter.</param>
+    /// <param name="inspectionCtxt">
+    /// An optional shared inspection context. If none is given,
+    /// a new context will be created and again disposed within this method.
+    /// </param>
     /// <returns>Public type descriptors.</returns>
     public IReadOnlyList<TypeDescriptor> GetTypes(
-        IReadOnlyList<string> assemblyPaths, string? ns = null)
+        IReadOnlyList<string> assemblyPaths, string? ns = null,
+        TypeInspectionContext? inspectionCtxt = null)
     {
-        using var mlc = CreateContext(assemblyPaths);
-        var docs = XmlDocumentationProvider.Load(assemblyPaths);
+        var localCtxt = inspectionCtxt ?? new TypeInspectionContext(assemblyPaths);
+        var mlc = localCtxt.LoadCtxt;
+        var docs = localCtxt.DocProvider;
 
-        var types = new List<TypeDescriptor>();
-
-        foreach (var path in assemblyPaths)
+        try
         {
-            try
+            var types = new List<TypeDescriptor>();
+
+            foreach (var asm in localCtxt.Assemblies)
             {
-                var asm = mlc.LoadFromAssemblyPath(path);
+                try
+                {
+                    var allTypes = GetPublicTypesFrom(asm);
 
-                Type[] allTypes;
-                try   { allTypes = asm.GetTypes(); }
-                catch (ReflectionTypeLoadException ex) { allTypes = [.. ex.Types.OfType<Type>()]; }
-
-                types.AddRange(allTypes
-                    .Where(t => t.IsPublic && NamespaceMatches(t.Namespace, ns))
-                    .Select(t => new TypeDescriptor(
-                        (t.FullName ?? t.Name).Replace('+', '.'),
-                        t.Name,
-                        t.Namespace ?? "",
-                        GetTypeKind(t),
-                        docs.GetTypeSummary(t))));
+                    types.AddRange(allTypes
+                        .Where(t =>
+                            (t.IsPublic || t.IsNestedPublic) && NamespaceMatches(t.Namespace, ns))
+                        .Select(t => new TypeDescriptor(
+                            t, GetTypeKind(t), docs.GetTypeSummary(t))));
+                }
+                catch
+                {
+                    // ignored
+                }
             }
-            catch
+
+            return [.. types.OrderBy(t => t.Namespace).ThenBy(t => t.Name)];
+        }
+        finally
+        {
+            if (inspectionCtxt is null)
             {
-                // ignored
+                localCtxt.Dispose();
             }
         }
-
-        return [.. types.OrderBy(t => t.Namespace).ThenBy(t => t.Name)];
     }
 
-    static bool NamespaceMatches(string? typeNamespace, string? filterNamespace) => 
+    static bool NamespaceMatches(string? typeNamespace, string? filterNamespace) =>
         PatternFilters.MatchesExactOrGlob(typeNamespace, filterNamespace);
+
+    static Type[] GetPublicTypesFrom(Assembly asm)
+    {
+        try
+        {
+            return asm.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return [.. ex.Types.OfType<Type>()];
+        }
+    }
 
     static IReadOnlyList<MemberDescriptor> GetMembersFromType(
         Type type,
@@ -176,13 +188,13 @@ public sealed class TypeInspector
         bool includeAttributes,
         XmlDocumentationProvider docs)
     {
-        var flags   = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
         var results = new List<MemberDescriptor>();
 
         void TryAdd<T>(Func<IEnumerable<T>> getMembers, Func<T, MemberDescriptor> format)
         {
             IEnumerable<T> members;
-            try   { members = getMembers(); }
+            try { members = getMembers(); }
             catch { return; }
 
             foreach (var m in members)
@@ -206,20 +218,13 @@ public sealed class TypeInspector
         return [.. results.OrderBy(d => d.Kind).ThenBy(d => d.Name)];
     }
 
-    static MetadataLoadContext CreateContext(IReadOnlyList<string> assemblyPaths)
-    {
-        var runtimeDlls = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
-        var resolver    = new PathAssemblyResolver([.. assemblyPaths, .. runtimeDlls]);
-        return new MetadataLoadContext(resolver);
-    }
-
     static Type? FindType(MetadataLoadContext mlc, IReadOnlyList<string> assemblyPaths, string typeName)
     {
         foreach (var path in assemblyPaths)
         {
             try
             {
-                var asm  = mlc.LoadFromAssemblyPath(path);
+                var asm = mlc.LoadFromAssemblyPath(path);
                 var type = asm.GetType(typeName)
                     ?? asm.GetTypes().FirstOrDefault(t =>
                         t.Name == typeName || t.FullName == typeName);
@@ -237,7 +242,7 @@ public sealed class TypeInspector
 
     static string GetTypeKind(Type t) => t switch
     {
-        { IsEnum: true }      => "enum",
+        { IsEnum: true } => "enum",
         { IsValueType: true } => "struct",
         { IsInterface: true } => "interface",
         _ when t.BaseType?.FullName == "System.MulticastDelegate" => "delegate",
@@ -251,7 +256,7 @@ public sealed class TypeInspector
         XmlDocumentationProvider docs)
     {
         ParameterInfo[] parms;
-        try   { parms = c.GetParameters(); }
+        try { parms = c.GetParameters(); }
         catch { parms = []; }
 
         var @params = string.Join(", ", parms
@@ -269,7 +274,7 @@ public sealed class TypeInspector
         bool includeAttributes,
         XmlDocumentationProvider docs)
     {
-        var isStatic  = p.GetMethod?.IsStatic == true || p.SetMethod?.IsStatic == true;
+        var isStatic = p.GetMethod?.IsStatic == true || p.SetMethod?.IsStatic == true;
         var accessors = (p.CanRead ? "get; " : "") + (p.CanWrite ? "set; " : "");
         var sig =
             $"{(isStatic ? "static " : "")}{SafeTypeName(() => p.PropertyType)} {p.Name} {{ {accessors}}}";
@@ -286,14 +291,14 @@ public sealed class TypeInspector
         bool includeAttributes,
         XmlDocumentationProvider docs)
     {
-        var prefix     = m.IsStatic ? "static " : "";
+        var prefix = m.IsStatic ? "static " : "";
         var returnType = SafeTypeName(() => m.ReturnType);
-        var generics   = m.IsGenericMethod
+        var generics = m.IsGenericMethod
             ? $"<{string.Join(", ", m.GetGenericArguments().Select(t => t.Name))}>"
             : "";
 
         ParameterInfo[] parms;
-        try   { parms = m.GetParameters(); }
+        try { parms = m.GetParameters(); }
         catch { parms = []; }
 
         var @params = string.Join(", ", parms
@@ -523,7 +528,7 @@ public sealed class TypeInspector
     static string FormatTypeName(Type t)
     {
         if (t.IsGenericParameter) return t.Name;
-        if (t.IsArray)            return $"{FormatTypeName(t.GetElementType()!)}[]";
+        if (t.IsArray) return $"{FormatTypeName(t.GetElementType()!)}[]";
 
         if (t.IsGenericType)
         {
@@ -539,21 +544,21 @@ public sealed class TypeInspector
         return t.FullName switch
         {
             "System.Boolean" => "bool",
-            "System.Byte"    => "byte",
-            "System.SByte"   => "sbyte",
-            "System.Int16"   => "short",
-            "System.UInt16"  => "ushort",
-            "System.Int32"   => "int",
-            "System.UInt32"  => "uint",
-            "System.Int64"   => "long",
-            "System.UInt64"  => "ulong",
-            "System.Single"  => "float",
-            "System.Double"  => "double",
+            "System.Byte" => "byte",
+            "System.SByte" => "sbyte",
+            "System.Int16" => "short",
+            "System.UInt16" => "ushort",
+            "System.Int32" => "int",
+            "System.UInt32" => "uint",
+            "System.Int64" => "long",
+            "System.UInt64" => "ulong",
+            "System.Single" => "float",
+            "System.Double" => "double",
             "System.Decimal" => "decimal",
-            "System.Char"    => "char",
-            "System.String"  => "string",
-            "System.Object"  => "object",
-            "System.Void"    => "void",
+            "System.Char" => "char",
+            "System.String" => "string",
+            "System.Object" => "object",
+            "System.Void" => "void",
             _ => t.Name
         };
     }

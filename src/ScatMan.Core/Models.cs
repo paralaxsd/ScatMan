@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace ScatMan.Core;
 
 /// <summary>
@@ -22,12 +24,16 @@ public record MemberDescriptor(
 /// <summary>
 /// Describes a public type found in inspected assemblies.
 /// </summary>
+[DebuggerDisplay($"{{{nameof(DebuggerDisplay)}}}")]
 public record TypeDescriptor(
-    string FullName,
-    string Name,
-    string Namespace,
-    string Kind,
-    string? Summary = null);
+    Type Type, string Kind, string? Summary = null)
+{
+    public string FullName => DebuggerDisplay.Replace('+', '.');
+    public string Name => Type.Name;
+    public string Namespace => Type.Namespace ?? "";
+
+    string DebuggerDisplay => Type.FullName ?? Type.Name;
+}
 
 /// <summary>
 /// Contains package version metadata from NuGet registration.

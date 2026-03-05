@@ -50,11 +50,11 @@ static class ScatManTools
         [Description("Package version, or alias: latest / latest-pre")] string version,
         [Description(
             "Namespace filter (exact or glob, optional). " +
-            "Glob syntax follows Microsoft.Extensions.FileSystemGlobbing.")]
+            "Glob syntax follows Microsoft.Extensions.FileSystemGlobbing. Supported: *, ?, **, exact names, /. Not supported: [abc], {foo,bar}.")]
         string? ns = null,
         [Description(
             "Type-name filter (glob optional). " +
-            "Plain text is case-insensitive substring.")]
+            "Glob syntax: *, ?, **, exact names, /. Plain text is case-insensitive substring. Not supported: [abc], {foo,bar}.")]
         string? filter = null,
         CancellationToken ct = default)
     {

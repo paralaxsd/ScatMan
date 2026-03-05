@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace ScatMan.Core;
 
-sealed class XmlDocumentationProvider
+public sealed class XmlDocumentationProvider
 {
     readonly IReadOnlyDictionary<string, string> _typeSummaries;
     readonly IReadOnlyDictionary<string, string> _memberSummaries;

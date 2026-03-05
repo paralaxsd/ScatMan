@@ -72,7 +72,7 @@ NAudio.CoreAudioApi
 `--filter` supports glob pattern; plain text remains a case-insensitive substring match.
 
 Glob syntax follows `Microsoft.Extensions.FileSystemGlobbing`.
-Common tokens: `*`, `?`, `[abc]`, `{foo,bar}`.
+Supported tokens: `*`, `?`, exact names, directory separators (`/`), and `**` for arbitrary directory depth. Character classes `[abc]` and alternation `{foo,bar}` are not supported.
 
 Examples:
 - `--namespace "ScatMan.*"`
@@ -228,7 +228,7 @@ For MCP tools using a `version` parameter, aliases are supported as well:
 `latest` (latest stable, fallback latest if no stable exists) and `latest-pre`.
 
 For MCP tools with `ns`, `filter`, or `query`, glob syntax follows
-`Microsoft.Extensions.FileSystemGlobbing` (`*`, `?`, `[abc]`, `{foo,bar}`).
+`Microsoft.Extensions.FileSystemGlobbing` (`*`, `?`, `**`, exact names, `/`). Character classes `[abc]` and alternation `{foo,bar}` are not supported.
 
 ---
 

@@ -24,7 +24,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
-        var types      = new TypeInspector().GetTypes(assemblies, settings.Namespace);
+        var types = new TypeInspector().GetTypes(assemblies, settings.Namespace);
 
         if (settings.Filter is { } f)
             types = [.. types.Where(t => TypeFilterMatches(t.Name, f))];
@@ -55,7 +55,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         Settings settings,
         string resolvedVersion)
     {
-        var nsLabel     = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
+        var nsLabel = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
         var filterLabel = settings.Filter is { } f ? $" ~[italic]{Markup.Escape(f)}[/]" : "";
         AnsiConsole.MarkupLine(
             $"[bold]{Markup.Escape(settings.Package)} {resolvedVersion}[/]{nsLabel}{filterLabel} — {types.Count} public type(s)\n");
@@ -79,6 +79,6 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
             AnsiConsole.MarkupLine("  [yellow](no public types found)[/]");
     }
 
-    static bool TypeFilterMatches(string typeName, string filter) => 
+    static bool TypeFilterMatches(string typeName, string filter) =>
         PatternFilters.MatchesSubstringOrGlob(typeName, filter);
 }
