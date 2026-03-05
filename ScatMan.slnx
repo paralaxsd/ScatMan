@@ -12,7 +12,16 @@
     <File Path="README.md" />
     <File Path="version.json" />
   </Folder>
+  <Folder Name="/0 Solution Items/.github/">
+    <File Path=".github/copilot-instructions.md" />
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/0 Solution Items/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/publish-tool.yml" />
+  </Folder>
   <Folder Name="/1 src/">
+    <File Path="src/Directory.Build.props" />
     <Project Path="src/ScatMan.Cli/ScatMan.Cli.csproj" />
     <Project Path="src/ScatMan.Core/ScatMan.Core.csproj" />
     <Project Path="src/ScatMan.Mcp/ScatMan.Mcp.csproj" />

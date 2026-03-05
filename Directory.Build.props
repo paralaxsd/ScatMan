@@ -8,8 +8,10 @@
   </PropertyGroup>
   <!-- NuGet package metadata (ignored for non-packable projects) -->
   <PropertyGroup>
-    <Authors>Paralax^Speckdrumm</Authors>
-    <Copyright>Copyright © 2026</Copyright>
+    <PackageId>Nerdbank.ScatMan</PackageId>
+    <Authors>Paralax^Speckdrumm; Claude Sonnet</Authors>
+    <Company>Speckdrumm</Company>
+    <Copyright>© Speckdrumm 2026</Copyright>
     <RepositoryUrl>https://github.com/paralaxsd/ScatMan</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

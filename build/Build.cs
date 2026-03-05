@@ -2,7 +2,11 @@ using Nuke.Common;
 using Nuke.Common.CI.GitHubActions;
 using Nuke.Common.IO;
 using Nuke.Common.Tools.DotNet;
+using System.Linq;
+using Nuke.Common.Tooling;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+// ReSharper disable UnusedMember.Local
+// ReSharper disable AllUnderscoreLocalParameterName
 
 [GitHubActions("ci",
     GitHubActionsImage.UbuntuLatest,
@@ -27,6 +31,7 @@ class Build : NukeBuild
     AbsolutePath SolutionFile  => RootDirectory / "ScatMan.slnx";
     AbsolutePath CliProject    => RootDirectory / "src" / "ScatMan.Cli" / "ScatMan.Cli.csproj";
     AbsolutePath McpProject    => RootDirectory / "src" / "ScatMan.Mcp" / "ScatMan.Mcp.csproj";
+    AbsolutePath CoreProject => RootDirectory / "src" / "ScatMan.Core" / "ScatMan.Core.csproj";
 
     Target Clean => _ => _
         .Before(Restore)
@@ -48,7 +53,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             ArtifactsDir.CreateOrCleanDirectory();
-            foreach (var project in new[] { CliProject, McpProject })
+            foreach (var project in new[] { CliProject, McpProject, CoreProject })
                 DotNetPack(s => s
                     .SetProject(project)
                     .SetConfiguration(Configuration)
@@ -59,10 +64,20 @@ class Build : NukeBuild
     Target Push => _ => _
         .DependsOn(Pack)
         .Requires(() => NuGetApiKey)
-        .Executes(() => DotNetNuGetPush(s => s
-            .SetSource("https://api.nuget.org/v3/index.json")
-            .SetApiKey(NuGetApiKey)
-            .SetTargetPath(ArtifactsDir / "*.nupkg")));
+        .Executes(() =>
+        {
+            var nonSymbolNugetPackages = ArtifactsDir.GetFiles("*.nupkg")
+                .Where(f => !f.Name.EndsWith(".symbols.nupkg"));
+
+            foreach (var pkg in nonSymbolNugetPackages)
+            {
+                DotNetNuGetPush(s => s
+                    .SetTargetPath(pkg)
+                    .SetSource("https://api.nuget.org/v3/index.json")
+                    .SetApiKey(NuGetApiKey)
+                    .AddProcessAdditionalArguments("--skip-duplicate"));
+            }
+        });
 
     /******************************************************************************************
      * METHODS
