@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>ScatMan.Core</PackageId>
-    <Description>Core library for nuget retrieval and inspection.</Description>
+    <Description>Core library for nuget meta data retrieval and inspection.</Description>
     <PackageTags>nuget;analysis;scatman</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>

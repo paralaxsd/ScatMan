@@ -8,7 +8,6 @@
   </PropertyGroup>
   <!-- NuGet package metadata (ignored for non-packable projects) -->
   <PropertyGroup>
-    <PackageId>Nerdbank.ScatMan</PackageId>
     <Authors>Paralax^Speckdrumm; Claude Sonnet</Authors>
     <Company>Speckdrumm</Company>
     <Copyright>© Speckdrumm 2026</Copyright>
