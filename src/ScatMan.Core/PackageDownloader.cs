@@ -4,6 +4,7 @@ using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using System.IO.Compression;
+using System.Net;
 
 namespace ScatMan.Core;
 
@@ -12,6 +13,11 @@ namespace ScatMan.Core;
 /// </summary>
 public sealed class PackageDownloader(string? cacheRoot = null)
 {
+    const string CacheCompletionMarker = ".scatman.complete";
+    const string FlatContainerBaseUrl = "https://api.nuget.org/v3-flatcontainer";
+
+    static readonly HttpClient Http = new();
+
     readonly string _cacheRoot = cacheRoot
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scatman", "cache");
 
@@ -41,8 +47,11 @@ public sealed class PackageDownloader(string? cacheRoot = null)
 
         var packageDir = Path.Combine(_cacheRoot, packageId.ToLowerInvariant(), version);
 
-        if (!Directory.Exists(packageDir))
+        if (!IsCacheEntryComplete(packageDir))
+        {
+            TryDeleteDirectory(packageDir);
             await DownloadAndExtractAsync(packageId, NuGetVersion.Parse(version), packageDir, ct);
+        }
 
         paths.AddRange(SelectAssemblies(packageDir));
 
@@ -58,13 +67,103 @@ public sealed class PackageDownloader(string? cacheRoot = null)
 
         Directory.CreateDirectory(destDir);
 
-        var nupkgPath = Path.Combine(destDir, $"{packageId}.nupkg");
-        await using (var stream = File.Create(nupkgPath))
-            await resource.CopyNupkgToStreamAsync(
-                packageId, version, stream, new SourceCacheContext(), NullLogger.Instance, ct);
+        var tempNupkgPath = Path.Combine(
+            Path.GetTempPath(),
+            $"{packageId}.{version}.{Guid.NewGuid():N}.nupkg");
 
-        await ZipFile.ExtractToDirectoryAsync(nupkgPath, destDir, overwriteFiles: true, cancellationToken: ct);
-        File.Delete(nupkgPath);
+        try
+        {
+            bool found;
+            await using (var stream = File.Create(tempNupkgPath))
+                found = await resource.CopyNupkgToStreamAsync(
+                    packageId,
+                    version,
+                    stream,
+                    new SourceCacheContext(),
+                    NullLogger.Instance,
+                    ct);
+
+            if (!found)
+            {
+                var downloaded = await DownloadFromFlatContainerAsync(packageId, version, tempNupkgPath, ct);
+                if (!downloaded)
+                    throw new IOException($"Package '{packageId} {version}' is not available on NuGet.");
+            }
+
+            if (!File.Exists(tempNupkgPath) || new FileInfo(tempNupkgPath).Length == 0)
+                throw new IOException($"Downloaded package '{packageId} {version}' is empty.");
+
+            await ZipFile.ExtractToDirectoryAsync(
+                tempNupkgPath,
+                destDir,
+                overwriteFiles: true,
+                cancellationToken: ct);
+
+            File.WriteAllText(Path.Combine(destDir, CacheCompletionMarker), "ok");
+        }
+        catch
+        {
+            TryDeleteDirectory(destDir);
+            throw;
+        }
+        finally
+        {
+            try { if (File.Exists(tempNupkgPath)) File.Delete(tempNupkgPath); }
+            catch { /* ignored */ }
+        }
+    }
+
+    static async Task<bool> DownloadFromFlatContainerAsync(
+        string packageId,
+        NuGetVersion version,
+        string destinationPath,
+        CancellationToken ct)
+    {
+        var id = packageId.ToLowerInvariant();
+        var normalized = version.ToNormalizedString().ToLowerInvariant();
+        var url = $"{FlatContainerBaseUrl}/{id}/{normalized}/{id}.{normalized}.nupkg";
+
+        using var response = await Http.GetAsync(url, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return false;
+
+        response.EnsureSuccessStatusCode();
+
+        await using var source = await response.Content.ReadAsStreamAsync(ct);
+        await using var target = new FileStream(
+            destinationPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None);
+
+        await source.CopyToAsync(target, ct);
+        return true;
+    }
+
+    static bool IsCacheEntryComplete(string packageDir)
+    {
+        if (!Directory.Exists(packageDir))
+            return false;
+
+        if (File.Exists(Path.Combine(packageDir, CacheCompletionMarker)))
+            return true;
+
+        var hasNuspec = Directory.GetFiles(packageDir, "*.nuspec", SearchOption.TopDirectoryOnly).Length > 0;
+        var hasDll = Directory.GetFiles(packageDir, "*.dll", SearchOption.AllDirectories).Length > 0;
+        return hasNuspec && hasDll;
+    }
+
+    static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+            // ignored; a later extract attempt will report actionable errors
+        }
     }
 
     static IEnumerable<(string Id, string Version)> ReadDependencies(string packageDir)
