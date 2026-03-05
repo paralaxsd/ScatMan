@@ -18,13 +18,13 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
-        var assemblies = await settings.FetchAssembliesAsync(ct);
+        var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
 
         try
         {
             var ctors = new TypeInspector().GetConstructors(assemblies, settings.TypeName);
 
-            if (settings.Json) PrintJson(ctors, settings);
+            if (settings.Json) PrintJson(ctors, settings, resolvedVersion);
             else PrintFormatted(ctors, settings);
         }
         catch (TypeNotFoundException ex)
@@ -36,12 +36,15 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
         return 0;
     }
 
-    static void PrintJson(IReadOnlyList<ConstructorSignature> ctors, Settings settings)
+    static void PrintJson(
+        IReadOnlyList<ConstructorSignature> ctors,
+        Settings settings,
+        string resolvedVersion)
     {
         var result = new
         {
             package = settings.Package,
-            version = settings.Version,
+            version = resolvedVersion,
             typeName = settings.TypeName,
             constructors = ctors.Select(c => new
             {

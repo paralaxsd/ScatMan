@@ -27,7 +27,7 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
-        var assemblies = await settings.FetchAssembliesAsync(ct);
+        var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
 
         try
         {
@@ -37,7 +37,7 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
                 includeDefaultValues: !settings.NoDefaultValues,
                 includeAttributes: settings.IncludeAttributes);
 
-            if (settings.Json) PrintJson(members, settings);
+            if (settings.Json) PrintJson(members, settings, resolvedVersion);
             else PrintFormatted(members, settings);
         }
         catch (TypeNotFoundException ex)
@@ -49,12 +49,15 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
         return 0;
     }
 
-    static void PrintJson(IReadOnlyList<MemberDescriptor> members, Settings settings)
+    static void PrintJson(
+        IReadOnlyList<MemberDescriptor> members,
+        Settings settings,
+        string resolvedVersion)
     {
         var result = new
         {
             package = settings.Package,
-            version = settings.Version,
+            version = resolvedVersion,
             typeName = settings.TypeName,
             members = members.Select(m => new { m.Name, m.Kind, m.Signature, m.Summary })
         };

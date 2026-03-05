@@ -26,23 +26,46 @@ class PackageSettings : BaseSettings
     public string Package { get; init; } = "";
 
     [CommandArgument(1, "<version>")]
-    [Description("Package version")]
+    [Description("Package version, or alias: latest / latest-pre")]
     public string Version { get; init; } = "";
 
-    internal async Task<IReadOnlyList<string>> FetchAssembliesAsync(CancellationToken ct)
+    internal async Task<(IReadOnlyList<string> Assemblies, string ResolvedVersion)> FetchAssembliesAsync(
+        CancellationToken ct)
     {
         var downloader = new PackageDownloader();
+        var resolvedVersion = await ResolveVersionAsync(ct);
 
         if (Json)
-            return await downloader.DownloadAsync(Package, Version, ct);
+            return (await downloader.DownloadAsync(Package, resolvedVersion, ct), resolvedVersion);
+
+        var versionLabel = resolvedVersion == Version
+            ? resolvedVersion
+            : $"{Version} -> {resolvedVersion}";
 
         IReadOnlyList<string> assemblies = [];
         await AnsiConsole.Status()
             .Spinner(Spinner.Known.Dots)
             .StartAsync(
-                $"Downloading [bold]{Package} {Version}[/]...",
-                async _ => assemblies = await downloader.DownloadAsync(Package, Version, ct));
+                $"Downloading [bold]{Package} {versionLabel}[/]...",
+                async _ => assemblies = await downloader.DownloadAsync(Package, resolvedVersion, ct));
 
-        return assemblies;
+        return (assemblies, resolvedVersion);
+    }
+
+    async Task<string> ResolveVersionAsync(CancellationToken ct)
+    {
+        if (!Version.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
+            !Version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
+            return Version;
+
+        var versions = await new NuGetRegistrationClient().GetVersionsAsync(Package, ct);
+        if (versions.Count == 0)
+            throw new PackageNotFoundException(Package);
+
+        if (Version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
+            return versions[0].Version;
+
+        var latestStable = versions.FirstOrDefault(v => !v.IsPrerelease);
+        return latestStable?.Version ?? versions[0].Version;
     }
 }

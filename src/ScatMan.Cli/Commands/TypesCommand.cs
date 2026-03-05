@@ -23,24 +23,27 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
-        var assemblies = await settings.FetchAssembliesAsync(ct);
+        var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
         var types      = new TypeInspector().GetTypes(assemblies, settings.Namespace);
 
         if (settings.Filter is { } f)
             types = [.. types.Where(t => t.Name.Contains(f, StringComparison.OrdinalIgnoreCase))];
 
-        if (settings.Json) PrintJson(types, settings);
-        else PrintFormatted(types, settings);
+        if (settings.Json) PrintJson(types, settings, resolvedVersion);
+        else PrintFormatted(types, settings, resolvedVersion);
 
         return 0;
     }
 
-    static void PrintJson(IReadOnlyList<TypeDescriptor> types, Settings settings)
+    static void PrintJson(
+        IReadOnlyList<TypeDescriptor> types,
+        Settings settings,
+        string resolvedVersion)
     {
         var result = new
         {
             package    = settings.Package,
-            version    = settings.Version,
+            version    = resolvedVersion,
             @namespace = settings.Namespace,
             filter     = settings.Filter,
             types      = types.Select(t => new { t.FullName, t.Kind, t.Summary })
@@ -48,12 +51,15 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 
-    static void PrintFormatted(IReadOnlyList<TypeDescriptor> types, Settings settings)
+    static void PrintFormatted(
+        IReadOnlyList<TypeDescriptor> types,
+        Settings settings,
+        string resolvedVersion)
     {
         var nsLabel     = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
         var filterLabel = settings.Filter is { } f ? $" ~[italic]{Markup.Escape(f)}[/]" : "";
         AnsiConsole.MarkupLine(
-            $"[bold]{Markup.Escape(settings.Package)} {settings.Version}[/]{nsLabel}{filterLabel} — {types.Count} public type(s)\n");
+            $"[bold]{Markup.Escape(settings.Package)} {resolvedVersion}[/]{nsLabel}{filterLabel} — {types.Count} public type(s)\n");
 
         foreach (var group in types.GroupBy(t => t.Namespace).OrderBy(g => g.Key))
         {

@@ -22,21 +22,21 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
-        var assemblies = await settings.FetchAssembliesAsync(ct);
+        var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
         var hits       = new TypeInspector().Search(assemblies, settings.Query, settings.Namespace);
 
-        if (settings.Json) PrintJson(hits, settings);
-        else PrintFormatted(hits, settings);
+        if (settings.Json) PrintJson(hits, settings, resolvedVersion);
+        else PrintFormatted(hits, settings, resolvedVersion);
 
         return 0;
     }
 
-    static void PrintJson(SearchHits hits, Settings settings)
+    static void PrintJson(SearchHits hits, Settings settings, string resolvedVersion)
     {
         var result = new
         {
             package        = settings.Package,
-            version        = settings.Version,
+            version        = resolvedVersion,
             query          = settings.Query,
             @namespace     = settings.Namespace,
             matchingTypes  = hits.Types.Select(t => new { t.FullName, t.Kind, t.Summary }),
@@ -51,11 +51,11 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
 
-    static void PrintFormatted(SearchHits hits, Settings settings)
+    static void PrintFormatted(SearchHits hits, Settings settings, string resolvedVersion)
     {
         var nsLabel = settings.Namespace is { } ns ? $" [[{Markup.Escape(ns)}]]" : "";
         AnsiConsole.MarkupLine(
-            $"[bold]{Markup.Escape(settings.Package)} {settings.Version}[/]{nsLabel} — search [italic]\"{Markup.Escape(settings.Query)}\"[/]\n");
+            $"[bold]{Markup.Escape(settings.Package)} {resolvedVersion}[/]{nsLabel} — search [italic]\"{Markup.Escape(settings.Query)}\"[/]\n");
 
         AnsiConsole.MarkupLine($"[bold]Types ({hits.Types.Count})[/]");
         if (hits.Types.Count == 0)

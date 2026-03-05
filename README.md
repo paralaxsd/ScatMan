@@ -54,6 +54,8 @@ Use `--head N` to show only the N most recent versions; the header will read `N 
 scatman types <package> <version> [--namespace <ns>] [--filter <substring>]
 ```
 
+`<version>` also accepts aliases: `latest` and `latest-pre`.
+
 ```bash
 scatman types NAudio.Wasapi 2.2.1 --namespace NAudio.CoreAudioApi --filter Capture
 ```
@@ -75,6 +77,8 @@ NAudio.CoreAudioApi
 ```bash
 scatman search <package> <version> <query> [--namespace <ns>]
 ```
+
+`<version>` also accepts aliases: `latest` and `latest-pre`.
 
 ```bash
 scatman search NAudio.Wasapi 2.2.1 GetDefaultCaptureDevice
@@ -101,6 +105,8 @@ but not which type owns it. Both type names and member names are searched.
 ```bash
 scatman members <package> <version> <typeName>
 ```
+
+`<version>` also accepts aliases: `latest` and `latest-pre`.
 
 Long signatures are automatically expanded to one parameter per line when they would exceed the terminal width.
 
@@ -145,6 +151,8 @@ properties
 ```bash
 scatman ctors <package> <version> <typeName>
 ```
+
+`<version>` also accepts aliases: `latest` and `latest-pre`.
 
 ```bash
 scatman ctors NAudio.Wasapi 2.2.1 NAudio.CoreAudioApi.WasapiCapture
@@ -204,6 +212,9 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 | `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`) |
 | `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`) |
 | `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`) |
+
+For MCP tools using a `version` parameter, aliases are supported as well:
+`latest` (latest stable, fallback latest if no stable exists) and `latest-pre`.
 
 ---
 

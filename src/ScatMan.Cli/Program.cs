@@ -19,6 +19,8 @@ app.Configure(config =>
     config.AddCommand<TypesCommand>("types")
         .WithDescription("List public types in a NuGet package.")
         .WithExample(["types", "NAudio.Wasapi", "2.2.1"])
+        .WithExample(["types", "ScatMan.Core", "latest"])
+        .WithExample(["types", "Some.Package", "latest-pre"])
         .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--namespace", "NAudio.CoreAudioApi"])
         .WithExample(["types", "NAudio.Wasapi", "2.2.1", "--filter", "Capture"]);
 

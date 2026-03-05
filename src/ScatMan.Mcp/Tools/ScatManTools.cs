@@ -47,13 +47,17 @@ static class ScatManTools
     [Description("List all public types in a NuGet package.")]
     static async Task<string> GetTypes(
         [Description("NuGet package ID")] string packageId,
-        [Description("Package version")] string version,
+        [Description("Package version, or alias: latest / latest-pre")] string version,
         [Description("Filter by namespace (optional)")] string? ns = null,
         [Description("Case-insensitive substring filter on type name (optional)")] string? filter = null,
         CancellationToken ct = default)
     {
-        var assemblies = await FetchAssembliesAsync(packageId, version, ct);
-        if (assemblies is null) return Error($"Package {packageId} {version} not found.");
+        string resolvedVersion;
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        catch (PackageNotFoundException ex) { return Error(ex.Message); }
+
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         var types = new TypeInspector().GetTypes(assemblies, ns);
 
@@ -63,7 +67,8 @@ static class ScatManTools
         return Serialize(new
         {
             package    = packageId,
-            version,
+            requestedVersion = version,
+            version = resolvedVersion,
             @namespace = ns,
             filter,
             count      = types.Count,
@@ -84,20 +89,25 @@ static class ScatManTools
         "Useful when you know a method or type name exists but not which type it belongs to.")]
     static async Task<string> Search(
         [Description("NuGet package ID")] string packageId,
-        [Description("Package version")] string version,
+        [Description("Package version, or alias: latest / latest-pre")] string version,
         [Description("Case-insensitive substring to search for in type and member names")] string query,
         [Description("Restrict search to this namespace (optional)")] string? ns = null,
         CancellationToken ct = default)
     {
-        var assemblies = await FetchAssembliesAsync(packageId, version, ct);
-        if (assemblies is null) return Error($"Package {packageId} {version} not found.");
+        string resolvedVersion;
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        catch (PackageNotFoundException ex) { return Error(ex.Message); }
+
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         var hits = new TypeInspector().Search(assemblies, query, ns);
 
         return Serialize(new
         {
             package        = packageId,
-            version,
+            requestedVersion = version,
+            version = resolvedVersion,
             query,
             @namespace     = ns,
             matchingTypes  = hits.Types.Select(t => new
@@ -126,7 +136,7 @@ static class ScatManTools
         "Constructors are always included — no need to call a separate ctors tool.")]
     static async Task<string> GetMembers(
         [Description("NuGet package ID")] string packageId,
-        [Description("Package version")] string version,
+        [Description("Package version, or alias: latest / latest-pre")] string version,
         [Description("Full or simple type name, e.g. \"WasapiCapture\" or \"NAudio.CoreAudioApi.WasapiCapture\"")] string typeName,
         [Description("Include optional parameter default values in signatures (default: true)")]
         bool includeDefaultValues = true,
@@ -134,8 +144,12 @@ static class ScatManTools
         bool includeAttributes = false,
         CancellationToken ct = default)
     {
-        var assemblies = await FetchAssembliesAsync(packageId, version, ct);
-        if (assemblies is null) return Error($"Package {packageId} {version} not found.");
+        string resolvedVersion;
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        catch (PackageNotFoundException ex) { return Error(ex.Message); }
+
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         IReadOnlyList<CoreMemberDescriptor> members;
         try
@@ -151,7 +165,8 @@ static class ScatManTools
         return Serialize(new
         {
             package  = packageId,
-            version,
+            requestedVersion = version,
+            version = resolvedVersion,
             typeName,
             includeDefaultValues,
             includeAttributes,
@@ -170,6 +185,26 @@ static class ScatManTools
     {
         try   { return await new PackageDownloader().DownloadAsync(packageId, version, ct); }
         catch { return null; }
+    }
+
+    static async Task<string> ResolveVersionAsync(
+        string packageId,
+        string version,
+        CancellationToken ct)
+    {
+        if (!version.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
+            !version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
+            return version;
+
+        var versions = await new NuGetRegistrationClient().GetVersionsAsync(packageId, ct);
+        if (versions.Count == 0)
+            throw new PackageNotFoundException(packageId);
+
+        if (version.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
+            return versions[0].Version;
+
+        var stable = versions.FirstOrDefault(v => !v.IsPrerelease);
+        return stable?.Version ?? versions[0].Version;
     }
 
     static string Serialize(object value) => JsonSerializer.Serialize(value, JsonOptions);
