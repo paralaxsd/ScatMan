@@ -5,7 +5,8 @@ var app = new CommandApp();
 
 app.Configure(config =>
 {
-    config.SetApplicationName("scatman");
+    config.SetApplicationName("scatman")
+        .SetApplicationVersion(ThisAssembly.AssemblyInformationalVersion);
 
     config.AddCommand<CtorsCommand>("ctors")
         .WithDescription("List constructors of a type in a NuGet package.")
