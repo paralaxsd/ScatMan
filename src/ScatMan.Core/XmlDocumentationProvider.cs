@@ -50,12 +50,9 @@ public sealed class XmlDocumentationProvider
                 if (name.Length < 3 || name[1] != ':')
                     continue;
 
-                var memberBody = name[2..];
-                var parenIndex = memberBody.IndexOf('(');
-                if (parenIndex >= 0)
-                    memberBody = memberBody[..parenIndex];
-
-                memberSummaries.TryAdd(memberBody, summary);
+                // Use full member signature (including parameter list) as key
+                var memberKey = name[2..];
+                memberSummaries.TryAdd(memberKey, summary);
             }
         }
 
@@ -80,23 +77,45 @@ public sealed class XmlDocumentationProvider
 
         var baseTypeName = typeName.Replace('+', '.');
 
-        var key = member switch
+        string? key = null;
+        if (member is ConstructorInfo ctor)
         {
-            ConstructorInfo c => $"{baseTypeName}.{(c.IsStatic ? "#cctor" : "#ctor")}",
-            MethodInfo m when m.IsGenericMethod =>
-                $"{baseTypeName}.{m.Name}``{m.GetGenericArguments().Length}",
-            MethodInfo m => $"{baseTypeName}.{m.Name}",
-            PropertyInfo p => $"{baseTypeName}.{p.Name}",
-            FieldInfo f => $"{baseTypeName}.{f.Name}",
-            EventInfo e => $"{baseTypeName}.{e.Name}",
-            _ => null
-        };
+            var parameters = ctor.GetParameters();
+            if (parameters.Length == 0)
+                key = $"{baseTypeName}.#ctor";
+            else
+            {
+                var paramTypes = string.Join(",", parameters.Select(p => p.ParameterType.FullName ?? p.ParameterType.Name));
+                key = $"{baseTypeName}.#ctor({paramTypes})";
+            }
+        }
+        else if (member is MethodInfo m)
+        {
+            if (m.IsGenericMethod)
+                key = $"{baseTypeName}.{m.Name}``{m.GetGenericArguments().Length}";
+            else
+                key = $"{baseTypeName}.{m.Name}";
+        }
+        else if (member is PropertyInfo p)
+            key = $"{baseTypeName}.{p.Name}";
+        else if (member is FieldInfo f)
+            key = $"{baseTypeName}.{f.Name}";
+        else if (member is EventInfo e)
+            key = $"{baseTypeName}.{e.Name}";
 
         if (key is null)
             return null;
 
         if (_memberSummaries.TryGetValue(key, out var summary))
             return summary;
+
+        // Fallback: for constructors without FullName (e.g. generic types)
+        if (member is ConstructorInfo ctor2 && ctor2.GetParameters().Length > 0)
+        {
+            var paramTypes = string.Join(",", ctor2.GetParameters().Select(p => p.ParameterType.Name));
+            var fallbackKey = $"{baseTypeName}.#ctor({paramTypes})";
+            return _memberSummaries.GetValueOrDefault(fallbackKey);
+        }
 
         if (member is MethodInfo method && method.IsGenericMethod)
         {

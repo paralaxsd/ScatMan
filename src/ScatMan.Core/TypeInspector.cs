@@ -29,14 +29,14 @@ public sealed class TypeInspector
         var type = FindType(inspectionCtxt.LoadCtxt, assemblyPaths, typeName)
             ?? throw new TypeNotFoundException(typeName);
 
-        // TODO:  use doc provider to get parameter summaries
-
         return [.. type
             .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
             .Select(c => new ConstructorSignature(
                 [.. c.GetParameters().Select(p => new ParameterDescriptor(
                     p.Name ?? $"arg{p.Position}",
-                    FormatTypeName(p.ParameterType)))]))];
+                    FormatTypeName(p.ParameterType)))],
+                inspectionCtxt.DocProvider.GetMemberSummary(c)
+            ))];
     }
 
     /// <summary>

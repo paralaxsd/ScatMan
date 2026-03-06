@@ -10,7 +10,8 @@ public record ParameterDescriptor(string Name, string TypeName);
 /// <summary>
 /// Represents a public constructor signature.
 /// </summary>
-public record ConstructorSignature(IReadOnlyList<ParameterDescriptor> Parameters);
+public record ConstructorSignature(
+    IReadOnlyList<ParameterDescriptor> Parameters, string? Summary = null);
 
 /// <summary>
 /// Represents a public member and its formatted signature.

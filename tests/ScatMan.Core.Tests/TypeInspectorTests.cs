@@ -18,6 +18,21 @@ public sealed class TypeInspectorTests
         result[1].Parameters[0].TypeName.ShouldBe("string");
     }
 
+    // Test: GetConstructors returns XML summary for a type
+    [Fact]
+    public void GetConstructors_ReturnsXmlSummary()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyCtorType).Assembly.Location;
+        var ctors = inspector.GetConstructors([assembly], nameof(DummyCtorType));
+
+        // Finde den Konstruktor mit Parameter
+        var ctorWithParam = ctors.FirstOrDefault(c => c.Parameters.Count == 1);
+        ctorWithParam.ShouldNotBeNull();
+        ctorWithParam.Summary.ShouldNotBeNull();
+        ctorWithParam.Summary.ShouldContain("Konstruktor mit Parameter");
+    }
+
     // Test: GetMembers returns public members only
     [Fact]
     public void GetMembers_ReturnsPublicMembers()
@@ -62,10 +77,20 @@ public sealed class TypeInspectorTests
     }
 
     // Dummy types for testing
+    /// <summary>
+    /// Dummy-Typ für Konstruktor-Test
+    /// </summary>
     public sealed class DummyCtorType
     {
+        /// <summary>
+        /// Standard-Konstruktor für DummyCtorType
+        /// </summary>
         public DummyCtorType() {}
-        // ReSharper disable once UnusedParameter.Local
+
+        /// <summary>
+        /// Konstruktor mit Parameter
+        /// </summary>
+        /// <param name="s">Test-Parameter</param>
         public DummyCtorType(string s) {}
     }
 
