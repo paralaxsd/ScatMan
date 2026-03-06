@@ -23,10 +23,6 @@ public sealed class PatternFiltersTests
     [InlineData("foo.txt", "*bar*", false)]
     [InlineData("foo.txt", "foo?txt", false)]
     [InlineData("foo.txt", "foo.txt?", false)]
-    // Die folgenden Pattern sind laut Matcher-Doku nicht unterstützt:
-    // [InlineData("foo.txt", "foo.tx?", true)]
-    // [InlineData("foo.txt", "[f]oo.txt", true)]
-    // [InlineData("foo.txt", "{foo.txt,bar.txt}", true)]
     public void MatchesExactOrGlob_Works(string? value, string? pattern, bool expected)
         => PatternFilters.MatchesExactOrGlob(value, pattern).ShouldBe(expected);
 
@@ -52,12 +48,42 @@ public sealed class PatternFiltersTests
     [InlineData("foo.txt", "*foo*", true)]
     [InlineData("foo.txt", "*bar*", false)]
     [InlineData("foo.txt", "foo?txt", false)]
-    // Die folgenden Pattern sind laut Matcher-Doku nicht unterstützt:
-    // [InlineData("foo.txt", "foo.txt?", false)]
-    // [InlineData("foo.txt", "foo.tx?", true)]
-    // [InlineData("foo.txt", "[f]oo.txt", true)]
-    // [InlineData("foo.txt", "{foo.txt,bar.txt}", true)]
     public void MatchesSubstringOrGlob_Works(string? value, string? pattern, bool expected)
+        => PatternFilters.MatchesSubstringOrGlob(value, pattern).ShouldBe(expected);
+
+    // Path patterns (slash-separated) and namespace-style strings (dots are NOT separators
+    // in FileSystemGlobbing — * matches across dots, ** matches across slashes only).
+    [Theory]
+    [InlineData("path/to/file.txt", "**/*.txt", true)]
+    [InlineData("path/to/file.txt", "path/**", true)]
+    [InlineData("path/to/file.txt", "path/**/*.txt", true)]
+    [InlineData("path/to/file.txt", "other/**", false)]
+    [InlineData("file.txt", "**/*.txt", true)]
+    [InlineData("file.txt", "**", true)]
+    [InlineData("path/to/file.txt", "path/to/file.txt", true)]
+    [InlineData("path/to/file.txt", "path/to/other.txt", false)]
+    // Dots are NOT path separators — * matches across them
+    [InlineData("System.Collections.Generic", "System.*", true)]
+    [InlineData("System.Collections.Generic", "System.Collections.*", true)]
+    [InlineData("System.Collections.Generic", "Other.*", false)]
+    // ** does NOT cross dots — equivalent to * in dotted strings
+    [InlineData("System.Collections.Generic", "System.**", true)]
+    [InlineData("System.Collections.Generic", "Other.**", false)]
+    public void MatchesExactOrGlob_PathAndNamespacePatterns(string value, string pattern, bool expected)
+        => PatternFilters.MatchesExactOrGlob(value, pattern).ShouldBe(expected);
+
+    [Theory]
+    [InlineData("path/to/file.txt", "**/*.txt", true)]
+    [InlineData("path/to/file.txt", "path/**", true)]
+    [InlineData("path/to/file.txt", "other/**", false)]
+    [InlineData("file.txt", "**", true)]
+    // Substring matching works across slashes and dots
+    [InlineData("path/to/file.txt", "to/file", true)]
+    [InlineData("path/to/file.txt", "other", false)]
+    [InlineData("System.Collections.Generic", "Collections", true)]
+    [InlineData("System.Collections.Generic", "System.*", true)]
+    [InlineData("System.Collections.Generic", "Other.*", false)]
+    public void MatchesSubstringOrGlob_PathAndNamespacePatterns(string value, string pattern, bool expected)
         => PatternFilters.MatchesSubstringOrGlob(value, pattern).ShouldBe(expected);
 
 }
