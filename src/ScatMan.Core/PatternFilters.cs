@@ -2,6 +2,10 @@ using Microsoft.Extensions.FileSystemGlobbing;
 
 namespace ScatMan.Core;
 
+/// <summary>
+/// Provides utility methods for filtering strings based on exact matches,
+/// substrings, or glob patterns.
+/// </summary>
 public static class PatternFilters
 {
     public static bool MatchesExactOrGlob(string? value, string? pattern)

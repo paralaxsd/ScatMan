@@ -91,10 +91,22 @@ public sealed class XmlDocumentationProvider
         }
         else if (member is MethodInfo m)
         {
+            var parameters = m.GetParameters();
             if (m.IsGenericMethod)
-                key = $"{baseTypeName}.{m.Name}``{m.GetGenericArguments().Length}";
+            {
+                var paramTypes = string.Join(",", parameters.Select(p => p.ParameterType.FullName ?? p.ParameterType.Name));
+                key = $"{baseTypeName}.{m.Name}``{m.GetGenericArguments().Length}({paramTypes})";
+            }
             else
-                key = $"{baseTypeName}.{m.Name}";
+            {
+                if (parameters.Length == 0)
+                    key = $"{baseTypeName}.{m.Name}";
+                else
+                {
+                    var paramTypes = string.Join(",", parameters.Select(p => p.ParameterType.FullName ?? p.ParameterType.Name));
+                    key = $"{baseTypeName}.{m.Name}({paramTypes})";
+                }
+            }
         }
         else if (member is PropertyInfo p)
             key = $"{baseTypeName}.{p.Name}";
@@ -109,18 +121,20 @@ public sealed class XmlDocumentationProvider
         if (_memberSummaries.TryGetValue(key, out var summary))
             return summary;
 
-        // Fallback: for constructors without FullName (e.g. generic types)
-        if (member is ConstructorInfo ctor2 && ctor2.GetParameters().Length > 0)
+        // Fallback: für Methoden: nur Name ohne Parameter
+        if (member is MethodInfo fallbackMethod)
         {
-            var paramTypes = string.Join(",", ctor2.GetParameters().Select(p => p.ParameterType.Name));
-            var fallbackKey = $"{baseTypeName}.#ctor({paramTypes})";
-            return _memberSummaries.GetValueOrDefault(fallbackKey);
+            var fallbackKey = $"{baseTypeName}.{fallbackMethod.Name}";
+            if (_memberSummaries.TryGetValue(fallbackKey, out var fallbackSummary))
+                return fallbackSummary;
         }
 
-        if (member is MethodInfo method && method.IsGenericMethod)
+        // Fallback: für Konstruktoren: nur Name ohne Parameter
+        if (member is ConstructorInfo fallbackCtor)
         {
-            var fallback = $"{baseTypeName}.{method.Name}";
-            return _memberSummaries.GetValueOrDefault(fallback);
+            var fallbackKey = $"{baseTypeName}.#ctor";
+            if (_memberSummaries.TryGetValue(fallbackKey, out var fallbackSummary))
+                return fallbackSummary;
         }
 
         return null;

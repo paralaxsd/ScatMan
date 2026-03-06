@@ -3,6 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace ScatMan.Core;
 
+/// <summary>
+/// Encapsulates the context for inspecting types from a set of assemblies, including the
+/// MetadataLoadContext for loading assemblies and an XmlDocumentationProvider for accessing type
+/// and member summaries from XML documentation files.<br/>
+/// Implements IDisposable to ensure proper disposal of the MetadataLoadContext.
+/// </summary>
 public sealed class TypeInspectionContext : IDisposable
 {
     /******************************************************************************************

@@ -1,5 +1,8 @@
 namespace ScatMan.Core;
 
+/// <summary>
+/// Resolves package versions based on user input, supporting "latest" and "latest-pre" keywords.
+/// </summary>
 public static class PackageVersionResolver
 {
     public static async Task<string> ResolveAsync(
