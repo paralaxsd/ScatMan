@@ -15,16 +15,12 @@ https://thomaslevesque.com/2017/09/18/common-msbuild-properties-and-items-with-d
     <RepositoryType>git</RepositoryType>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <!-- XML docs -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
-
-  <!-- NuGet package metadata (ignored for non-packable projects) -->
-  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
     <PackageIcon>icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- XML docs -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
