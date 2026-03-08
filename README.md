@@ -114,10 +114,12 @@ but not which type owns it. Both type names and member names are searched.
 ### `members` — list public members of a type
 
 ```bash
-scatman members <package> <version> <typeName>
+scatman members <package> <version> <typeName> [--kind <kind>]
 ```
 
 `<version>` also accepts aliases: `latest` and `latest-pre`.
+
+`--kind` filters by member type: `constructor`, `method`, `property`, `field`, or `event` (case-insensitive).
 
 Long signatures are automatically expanded to one parameter per line when they would exceed the terminal width.
 
@@ -222,7 +224,7 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 | `get_versions` | List available versions of a package (`packageId`, `includePrerelease?`) |
 | `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`) |
 | `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`) |
-| `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`) |
+| `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`, `kind?`) |
 
 For MCP tools using a `version` parameter, aliases are supported as well:
 `latest` (latest stable, fallback latest if no stable exists) and `latest-pre`.
