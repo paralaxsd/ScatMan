@@ -20,7 +20,8 @@ public record MemberDescriptor(
     string Name,
     string Kind,
     string Signature,
-    string? Summary = null);
+    string? Summary = null,
+    bool IsObsolete = false);
 
 /// <summary>
 /// Describes a public type found in inspected assemblies.
@@ -55,12 +56,19 @@ public record SearchHits(
     IReadOnlyList<TypeDescriptor> Types, IReadOnlyList<MemberSearchHit> Members);
 
 /// <summary>
-/// Describes members added or removed for a single type between two package versions.
+/// Describes a member whose signature changed between two package versions.
+/// </summary>
+public record ChangedMember(string Name, string Kind, string OldSignature, string NewSignature);
+
+/// <summary>
+/// Describes member-level API changes for a single type between two package versions.
 /// </summary>
 public record TypeDiff(
     string TypeFullName,
     IReadOnlyList<MemberDescriptor> Added,
-    IReadOnlyList<MemberDescriptor> Removed);
+    IReadOnlyList<MemberDescriptor> Removed,
+    IReadOnlyList<ChangedMember> Changed,
+    IReadOnlyList<MemberDescriptor> Deprecated);
 
 /// <summary>
 /// Represents the full API difference between two versions of a package.

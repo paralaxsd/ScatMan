@@ -3,7 +3,34 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [v0.1.36] – 2026-03-08
+## [v0.1.48] – 2026-03-08
+
+### Added
+- New `scatman diff <pkg> <v1> <v2>` command to compare the public API between two versions
+- `--type` option on `diff` to restrict the comparison to a single type
+- `ApiDiffer` class in `ScatMan.Core` — compares types and members across two assembly sets
+- `TypeDiff` and `ApiDiff` records in `ScatMan.Core` for structured diff results
+- `ChangedMember` record for members whose signature changed (same name, different signature)
+- Severity grouping in formatted output: **BREAKING CHANGES** / **DEPRECATIONS** / **ADDITIONS**
+- Detection of signature changes: single-overload members with the same name but different signature are reported as changed rather than removed + added
+- Detection of newly deprecated members: members that gained `[Obsolete]` in v2 are reported under Deprecations
+- `IsObsolete` flag on `MemberDescriptor` — populated for all member kinds (constructor, method, property, field, event)
+- `get_diff` MCP tool (`packageId`, `version1`, `version2`, `typeName?`, `source?`)
+- `--source` support on `diff` command (consistent with all other commands)
+- 9 new unit tests for `ApiDiffer` and `IsObsolete` detection
+
+### Changed
+- `MemberDescriptor` extended with `IsObsolete` property (default `false`, non-breaking)
+- `TypeDiff` extended with `Changed` and `Deprecated` member lists
+- All `TypeInspector` format methods now detect and propagate `[ObsoleteAttribute]`
+
+### Documentation
+- README `diff` section updated with severity-grouped output example
+- MCP tools table updated with `get_diff` entry
+
+---
+
+## [v0.1.45] – 2026-03-08
 
 ### Added
 - New `scatman sources` command to list all configured package sources from `nuget.config` hierarchy

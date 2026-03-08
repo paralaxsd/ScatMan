@@ -199,16 +199,21 @@ scatman diff Serilog 3.1.1 4.0.0
 ```
 Serilog — 3.1.1 → 4.0.0
 
-Serilog.Core.ILogEventSink
-  + method  void Emit(LogEvent logEvent)
+BREAKING CHANGES
+  - method  Serilog.Core.ILogEventSink.void Emit(LogEvent logEvent)
 
-Serilog.Core.IBatchedLogEventSink
-  + method  Task EmitBatchAsync(IEnumerable<LogEvent> batch)
-  + method  Task OnEmptyBatchAsync()
+DEPRECATIONS
+  ! property  Serilog.Log.string OutputTemplate { get; set; }
+
+ADDITIONS
+  + type  Serilog.Core.IBatchedLogEventSink
+  + method  Serilog.Core.ILogEventSink.Task EmitBatchAsync(IEnumerable<LogEvent> batch)
 ```
 
-Added types appear as `+ TYPE <FullName>`, removed types as `- TYPE <FullName>`.
-For types present in both versions, added members are shown with `+` and removed members with `-`.
+Results are grouped by severity:
+- **BREAKING CHANGES** — removed types, removed members, and members whose signature changed
+- **DEPRECATIONS** — members newly marked `[Obsolete]` compared to the previous version
+- **ADDITIONS** — added types and added members
 
 ```bash
 scatman diff Serilog 3.1.1 4.0.0 --type LoggerConfiguration

@@ -227,7 +227,9 @@ static class ScatManTools
             [.. diff.ChangedTypes.Select(t => new DiffTypeSummary(
                 t.TypeFullName,
                 [.. t.Added.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))],
-                [.. t.Removed.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))]))]);
+                [.. t.Removed.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))],
+                [.. t.Changed.Select(c => new ChangedMemberDetail(c.Kind, c.Name, c.OldSignature, c.NewSignature))],
+                [.. t.Deprecated.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))]))]);
 
         return Serialize(result);
     }

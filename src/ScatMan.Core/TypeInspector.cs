@@ -279,7 +279,8 @@ public sealed class TypeInspector
         if (includeAttributes)
             sig = $"{FormatAttributes(c)}{sig}";
 
-        return new MemberDescriptor(".ctor", "constructor", sig, docs.GetMemberSummary(c));
+        return new MemberDescriptor(".ctor", "constructor", sig, docs.GetMemberSummary(c),
+            IsObsoleteMember(c));
     }
 
     static MemberDescriptor FormatProperty(
@@ -295,7 +296,8 @@ public sealed class TypeInspector
         if (includeAttributes)
             sig = $"{FormatAttributes(p)}{sig}";
 
-        return new MemberDescriptor(p.Name, "property", sig, docs.GetMemberSummary(p));
+        return new MemberDescriptor(p.Name, "property", sig, docs.GetMemberSummary(p),
+            IsObsoleteMember(p));
     }
 
     static MemberDescriptor FormatMethod(
@@ -321,7 +323,8 @@ public sealed class TypeInspector
         if (includeAttributes)
             sig = $"{FormatAttributes(m)}{sig}";
 
-        return new MemberDescriptor(m.Name, "method", sig, docs.GetMemberSummary(m));
+        return new MemberDescriptor(m.Name, "method", sig, docs.GetMemberSummary(m),
+            IsObsoleteMember(m));
     }
 
     static MemberDescriptor FormatField(
@@ -335,7 +338,8 @@ public sealed class TypeInspector
         if (includeAttributes)
             sig = $"{FormatAttributes(f)}{sig}";
 
-        return new MemberDescriptor(f.Name, "field", sig, docs.GetMemberSummary(f));
+        return new MemberDescriptor(f.Name, "field", sig, docs.GetMemberSummary(f),
+            IsObsoleteMember(f));
     }
 
     static MemberDescriptor FormatEvent(
@@ -350,7 +354,18 @@ public sealed class TypeInspector
         if (includeAttributes)
             sig = $"{FormatAttributes(e)}{sig}";
 
-        return new MemberDescriptor(e.Name, "event", sig, docs.GetMemberSummary(e));
+        return new MemberDescriptor(e.Name, "event", sig, docs.GetMemberSummary(e),
+            IsObsoleteMember(e));
+    }
+
+    static bool IsObsoleteMember(MemberInfo member)
+    {
+        try
+        {
+            return CustomAttributeData.GetCustomAttributes(member)
+                .Any(a => a.AttributeType.FullName == "System.ObsoleteAttribute");
+        }
+        catch { return false; }
     }
 
     static string FormatParameter(

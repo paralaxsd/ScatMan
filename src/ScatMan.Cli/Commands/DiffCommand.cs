@@ -93,7 +93,9 @@ sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             [.. diff.ChangedTypes.Select(t => new DiffTypeResult(
                 t.TypeFullName,
                 [.. t.Added.Select(m => new DiffMemberResult(m.Kind, m.Name, m.Signature))],
-                [.. t.Removed.Select(m => new DiffMemberResult(m.Kind, m.Name, m.Signature))]))]);
+                [.. t.Removed.Select(m => new DiffMemberResult(m.Kind, m.Name, m.Signature))],
+                [.. t.Changed.Select(c => new DiffChangedMemberResult(c.Kind, c.Name, c.OldSignature, c.NewSignature))],
+                [.. t.Deprecated.Select(m => new DiffMemberResult(m.Kind, m.Name, m.Signature))]))]);
 
         Console.WriteLine(JsonSerializer.Serialize(result, BaseSettings.JsonOptions));
     }
@@ -103,32 +105,60 @@ sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         AnsiConsole.MarkupLine(
             $"[bold]{Markup.Escape(diff.Package)}[/] — [grey]{Markup.Escape(diff.Version1)}[/] → [bold]{Markup.Escape(diff.Version2)}[/]\n");
 
-        if (diff.AddedTypes.Count == 0 && diff.RemovedTypes.Count == 0 && diff.ChangedTypes.Count == 0)
+        var hasBreaking    = diff.RemovedTypes.Count > 0
+            || diff.ChangedTypes.Any(t => t.Removed.Count > 0 || t.Changed.Count > 0);
+        var hasDeprecation = diff.ChangedTypes.Any(t => t.Deprecated.Count > 0);
+        var hasAdditions   = diff.AddedTypes.Count > 0
+            || diff.ChangedTypes.Any(t => t.Added.Count > 0);
+
+        if (!hasBreaking && !hasDeprecation && !hasAdditions)
         {
             AnsiConsole.MarkupLine("[green]No API changes detected.[/]");
             return;
         }
 
-        foreach (var typeName in diff.RemovedTypes)
-            AnsiConsole.MarkupLine($"[red]- TYPE  {Markup.Escape(typeName)}[/]");
-
-        foreach (var typeName in diff.AddedTypes)
-            AnsiConsole.MarkupLine($"[green]+ TYPE  {Markup.Escape(typeName)}[/]");
-
-        if (diff.AddedTypes.Count > 0 || diff.RemovedTypes.Count > 0)
-            AnsiConsole.WriteLine();
-
-        foreach (var typeDiff in diff.ChangedTypes)
+        if (hasBreaking)
         {
-            AnsiConsole.MarkupLine($"[bold]{Markup.Escape(typeDiff.TypeFullName)}[/]");
+            AnsiConsole.MarkupLine("[red bold]BREAKING CHANGES[/]");
 
-            foreach (var m in typeDiff.Removed)
-                AnsiConsole.MarkupLine($"  [red]-[/] [grey]{Markup.Escape(m.Kind)}[/]  {Markup.Escape(m.Signature)}");
+            foreach (var typeName in diff.RemovedTypes)
+                AnsiConsole.MarkupLine($"  [red]-[/] [grey]type[/]  {Markup.Escape(typeName)}");
 
-            foreach (var m in typeDiff.Added)
-                AnsiConsole.MarkupLine($"  [green]+[/] [grey]{Markup.Escape(m.Kind)}[/]  {Markup.Escape(m.Signature)}");
+            foreach (var t in diff.ChangedTypes)
+            {
+                foreach (var m in t.Removed)
+                    AnsiConsole.MarkupLine($"  [red]-[/] [grey]{Markup.Escape(m.Kind)}[/]  {Markup.Escape(t.TypeFullName)}.{Markup.Escape(m.Signature)}");
+
+                foreach (var c in t.Changed)
+                    AnsiConsole.MarkupLine(
+                        $"  [yellow]~[/] [grey]{Markup.Escape(c.Kind)}[/]  {Markup.Escape(t.TypeFullName)}.{Markup.Escape(c.OldSignature)}"
+                        + $"\n       → {Markup.Escape(c.NewSignature)}");
+            }
 
             AnsiConsole.WriteLine();
+        }
+
+        if (hasDeprecation)
+        {
+            AnsiConsole.MarkupLine("[yellow bold]DEPRECATIONS[/]");
+
+            foreach (var t in diff.ChangedTypes)
+                foreach (var m in t.Deprecated)
+                    AnsiConsole.MarkupLine($"  [yellow]![/] [grey]{Markup.Escape(m.Kind)}[/]  {Markup.Escape(t.TypeFullName)}.{Markup.Escape(m.Signature)}");
+
+            AnsiConsole.WriteLine();
+        }
+
+        if (hasAdditions)
+        {
+            AnsiConsole.MarkupLine("[green bold]ADDITIONS[/]");
+
+            foreach (var typeName in diff.AddedTypes)
+                AnsiConsole.MarkupLine($"  [green]+[/] [grey]type[/]  {Markup.Escape(typeName)}");
+
+            foreach (var t in diff.ChangedTypes)
+                foreach (var m in t.Added)
+                    AnsiConsole.MarkupLine($"  [green]+[/] [grey]{Markup.Escape(m.Kind)}[/]  {Markup.Escape(t.TypeFullName)}.{Markup.Escape(m.Signature)}");
         }
     }
 

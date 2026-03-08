@@ -266,5 +266,16 @@ public sealed class TypeInspectorTests
         /// </summary>
         public void MethodWithDefaults(int count = 42, string name = "test") { }
     }
+
+    public sealed class DummyObsoleteType
+    {
+        public static void ActiveMethod() { }
+
+        [Obsolete("Use ActiveMethod instead.")]
+        public void ObsoleteMethod() { }
+
+        [Obsolete("Use a different property.")]
+        public int ObsoleteProp { get; set; }
+    }
 }
 

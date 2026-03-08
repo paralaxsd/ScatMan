@@ -55,11 +55,9 @@ public sealed class ApiDifferTests
     [Fact]
     public void Diff_V2HasExtraAssembly_AddsTypesFromIt()
     {
-        // Use two assemblies for v2 (core lib adds types), v1 has just the test assembly
         var coreLib = typeof(object).Assembly.Location;
         var diff = new ApiDiffer().Diff("test", "1.0", [Assembly], "2.0", [Assembly, coreLib]);
 
-        // All types from coreLib that weren't in the test assembly should appear as added
         diff.AddedTypes.ShouldNotBeEmpty();
         diff.RemovedTypes.ShouldBeEmpty();
     }
@@ -72,5 +70,41 @@ public sealed class ApiDifferTests
 
         diff.RemovedTypes.ShouldNotBeEmpty();
         diff.AddedTypes.ShouldBeEmpty();
+    }
+
+    // IsObsolete detection via TypeInspector
+
+    [Fact]
+    public void GetMembers_MarksObsoleteMembers()
+    {
+        var inspector = new TypeInspector();
+        var members = inspector.GetMembers([Assembly], nameof(TypeInspectorTests.DummyObsoleteType));
+
+        members.ShouldContain(m => m.Name == "ObsoleteMethod" && m.IsObsolete);
+        members.ShouldContain(m => m.Name == "ObsoleteProp" && m.IsObsolete);
+        members.ShouldContain(m => m.Name == "ActiveMethod" && !m.IsObsolete);
+    }
+
+    [Fact]
+    public void GetMembers_NonObsoleteMembers_HaveFalseFlag()
+    {
+        var inspector = new TypeInspector();
+        var members = inspector.GetMembers([Assembly], nameof(TypeInspectorTests.DummyMemberType));
+
+        members.ShouldAllBe(m => !m.IsObsolete);
+    }
+
+    // TypeDiff structure
+
+    [Fact]
+    public void TypeDiff_SameAssembly_HasNoChangedOrDeprecated()
+    {
+        var diff = new ApiDiffer().Diff("test", "1.0", [Assembly], "1.0", [Assembly]);
+
+        foreach (var td in diff.ChangedTypes)
+        {
+            td.Changed.ShouldBeEmpty();
+            td.Deprecated.ShouldBeEmpty();
+        }
     }
 }

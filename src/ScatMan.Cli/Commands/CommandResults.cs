@@ -61,6 +61,10 @@ sealed record DiffResult(
 sealed record DiffTypeResult(
     string TypeFullName,
     IReadOnlyList<DiffMemberResult> Added,
-    IReadOnlyList<DiffMemberResult> Removed);
+    IReadOnlyList<DiffMemberResult> Removed,
+    IReadOnlyList<DiffChangedMemberResult> Changed,
+    IReadOnlyList<DiffMemberResult> Deprecated);
 
 sealed record DiffMemberResult(string Kind, string Name, string Signature);
+
+sealed record DiffChangedMemberResult(string Kind, string Name, string OldSignature, string NewSignature);
