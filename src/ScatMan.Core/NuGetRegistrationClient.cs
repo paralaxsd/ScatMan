@@ -1,6 +1,10 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using NuGet.Common;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using NuGetRepositories = NuGet.Repositories;
 
 namespace ScatMan.Core;
 
@@ -22,14 +26,18 @@ public sealed class NuGetRegistrationClient
     /// Returns listed package versions from SemVer1 and SemVer2 registration feeds.
     /// </summary>
     /// <param name="packageId">NuGet package ID.</param>
+    /// <param name="sourceUrl">Optional custom NuGet source URL. If null, uses nuget.org.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Versions ordered by published date descending.</returns>
     /// <exception cref="PackageNotFoundException">
     /// Thrown when the package does not exist in NuGet registration.
     /// </exception>
     public async Task<IReadOnlyList<PackageVersionInfo>> GetVersionsAsync(
-        string packageId, CancellationToken ct = default)
+        string packageId, string? sourceUrl = null, CancellationToken ct = default)
     {
+        if (!string.IsNullOrWhiteSpace(sourceUrl))
+            return await GetVersionsFromRepositoryAsync(packageId, sourceUrl, ct);
+
         var (v1, notFound) = await FetchVersionsAsync(SemVer1Url, packageId, ct);
         if (notFound)
             throw new PackageNotFoundException(packageId);
@@ -84,6 +92,39 @@ public sealed class NuGetRegistrationClient
         }
 
         return (versions, false);
+    }
+
+    async Task<IReadOnlyList<PackageVersionInfo>> GetVersionsFromRepositoryAsync(
+        string packageId, string sourceUrl, CancellationToken ct)
+    {
+        try
+        {
+            var repo = Repository.Factory.GetCoreV3(sourceUrl);
+            var resource = await repo.GetResourceAsync<PackageMetadataResource>(ct);
+
+            var packages = (await resource.GetMetadataAsync(
+                packageId,
+                includePrerelease: true,
+                includeUnlisted: false,
+                sourceCacheContext: new SourceCacheContext(),
+                log: NullLogger.Instance,
+                token: ct)).ToList();
+
+            if (packages.Count == 0)
+                throw new PackageNotFoundException(packageId);
+
+            return packages
+                .OrderByDescending(p => p.Published ?? DateTimeOffset.MinValue)
+                .Select(p => new PackageVersionInfo(
+                    p.Identity.Version.ToString(),
+                    p.Published ?? DateTimeOffset.Now,
+                    p.Identity.Version.IsPrerelease))
+                .ToList();
+        }
+        catch (FatalProtocolException ex) when (ex.Message.Contains("404"))
+        {
+            throw new PackageNotFoundException(packageId);
+        }
     }
 
     record RegistrationIndex(

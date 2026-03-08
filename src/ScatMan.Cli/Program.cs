@@ -36,6 +36,10 @@ app.Configure(config =>
 
     config.AddCommand<MetaCommand>("meta")
         .WithDescription("Show metadata about the ScatGirl CLI tool, including version and build information.");
+
+    config.AddCommand<SourcesCommand>("sources")
+        .WithDescription("List configured NuGet package sources.")
+        .WithExample(["sources"]);
 });
 
 return await app.RunAsync(args);

@@ -30,11 +30,16 @@ class PackageSettings : BaseSettings
     [Description("Package version, or alias: latest / latest-pre")]
     public string Version { get; init; } = "";
 
+    [CommandOption("-s|--source")]
+    [Description("Package source name or URL. Defaults to nuget.org.")]
+    public string? Source { get; init; }
+
     internal async Task<(IReadOnlyList<string> Assemblies, string ResolvedVersion)> FetchAssembliesAsync(
         CancellationToken ct)
     {
-        var downloader = new PackageDownloader();
-        var resolvedVersion = await ResolveVersionAsync(ct);
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(Source);
+        var downloader = new PackageDownloader(sourceUrl: sourceUrl);
+        var resolvedVersion = await ResolveVersionAsync(sourceUrl, ct);
 
         if (Json)
             return (await downloader.DownloadAsync(Package, resolvedVersion, ct), resolvedVersion);
@@ -53,6 +58,6 @@ class PackageSettings : BaseSettings
         return (assemblies, resolvedVersion);
     }
 
-    async Task<string> ResolveVersionAsync(CancellationToken ct) => 
-        await PackageVersionResolver.ResolveAsync(Package, Version, ct);
+    async Task<string> ResolveVersionAsync(string sourceUrl, CancellationToken ct) =>
+        await PackageVersionResolver.ResolveAsync(Package, Version, sourceUrl, ct);
 }

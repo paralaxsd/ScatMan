@@ -11,15 +11,17 @@ namespace ScatMan.Core;
 /// <summary>
 /// Downloads a NuGet package and its dependencies and returns assembly paths for inspection.
 /// </summary>
-public sealed class PackageDownloader(string? cacheRoot = null)
+public sealed class PackageDownloader(string? cacheRoot = null, string? sourceUrl = null)
 {
     const string CacheCompletionMarker = ".scatman.complete";
     const string FlatContainerBaseUrl = "https://api.nuget.org/v3-flatcontainer";
+    const string DefaultSourceUrl = "https://api.nuget.org/v3/index.json";
 
     static readonly HttpClient Http = new();
 
     readonly string _cacheRoot = cacheRoot
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".scatman", "cache");
+    readonly string _sourceUrl = sourceUrl ?? DefaultSourceUrl;
 
     /// <summary>
     /// Downloads package assets and resolves transitive dependencies.
@@ -62,7 +64,7 @@ public sealed class PackageDownloader(string? cacheRoot = null)
     async Task DownloadAndExtractAsync(
         string packageId, NuGetVersion version, string destDir, CancellationToken ct)
     {
-        var repo     = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+        var repo     = Repository.Factory.GetCoreV3(_sourceUrl);
         var resource = await repo.GetResourceAsync<FindPackageByIdResource>(ct);
 
         Directory.CreateDirectory(destDir);
@@ -85,9 +87,20 @@ public sealed class PackageDownloader(string? cacheRoot = null)
 
             if (!found)
             {
-                var downloaded = await DownloadFromFlatContainerAsync(packageId, version, tempNupkgPath, ct);
-                if (!downloaded)
-                    throw new IOException($"Package '{packageId} {version}' is not available on NuGet.");
+                // Only try flat container fallback for nuget.org (it's not available on private sources)
+                var isNugetOrg = _sourceUrl.Equals(DefaultSourceUrl, StringComparison.OrdinalIgnoreCase)
+                                || _sourceUrl.StartsWith("https://api.nuget.org", StringComparison.OrdinalIgnoreCase);
+
+                if (isNugetOrg)
+                {
+                    var downloaded = await DownloadFromFlatContainerAsync(packageId, version, tempNupkgPath, ct);
+                    if (!downloaded)
+                        throw new IOException($"Package '{packageId} {version}' is not available on NuGet.");
+                }
+                else
+                {
+                    throw new IOException($"Package '{packageId} {version}' is not available at source '{_sourceUrl}'.");
+                }
             }
 
             if (!File.Exists(tempNupkgPath) || new FileInfo(tempNupkgPath).Length == 0)

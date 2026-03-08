@@ -20,12 +20,14 @@ static class ScatManTools
     static async Task<string> GetVersions(
         [Description("NuGet package ID, e.g. \"Newtonsoft.Json\"")] string packageId,
         [Description("Include prerelease versions (default: false)")] bool includePrerelease = false,
+        [Description("Package source name or URL. Defaults to nuget.org.")] string? source = null,
         CancellationToken ct = default)
     {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(source);
         var client = new NuGetRegistrationClient();
 
         IReadOnlyList<PackageVersionInfo> all;
-        try   { all = await client.GetVersionsAsync(packageId, ct); }
+        try   { all = await client.GetVersionsAsync(packageId, sourceUrl, ct); }
         catch (PackageNotFoundException ex) { return Error(ex.Message); }
 
         var versions = includePrerelease ? all : all.Where(v => !v.IsPrerelease).ToList();
@@ -56,13 +58,15 @@ static class ScatManTools
             "Type-name filter (glob optional). " +
             "Glob syntax: *, ?, **, exact names, /. Plain text is case-insensitive substring. Not supported: [abc], {foo,bar}.")]
         string? filter = null,
+        [Description("Package source name or URL. Defaults to nuget.org.")] string? source = null,
         CancellationToken ct = default)
     {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(source);
         string resolvedVersion;
-        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, sourceUrl, ct); }
         catch (PackageNotFoundException ex) { return Error(ex.Message); }
 
-        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, sourceUrl, ct);
         if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         var types = new TypeInspector().GetTypes(assemblies, ns);
@@ -96,13 +100,15 @@ static class ScatManTools
         [Description("Package version, or alias: latest / latest-pre")] string version,
         [Description("Name query: glob pattern or plain case-insensitive substring")] string query,
         [Description("Namespace filter (exact or glob, optional)")] string? ns = null,
+        [Description("Package source name or URL. Defaults to nuget.org.")] string? source = null,
         CancellationToken ct = default)
     {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(source);
         string resolvedVersion;
-        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, sourceUrl, ct); }
         catch (PackageNotFoundException ex) { return Error(ex.Message); }
 
-        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, sourceUrl, ct);
         if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         var hits = new TypeInspector().Search(assemblies, query, ns);
@@ -144,13 +150,15 @@ static class ScatManTools
         bool includeAttributes = false,
         [Description("Optional kind filter: constructor, method, property, field, event")]
         string? kind = null,
+        [Description("Package source name or URL. Defaults to nuget.org.")] string? source = null,
         CancellationToken ct = default)
     {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(source);
         string resolvedVersion;
-        try { resolvedVersion = await ResolveVersionAsync(packageId, version, ct); }
+        try { resolvedVersion = await ResolveVersionAsync(packageId, version, sourceUrl, ct); }
         catch (PackageNotFoundException ex) { return Error(ex.Message); }
 
-        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, ct);
+        var assemblies = await FetchAssembliesAsync(packageId, resolvedVersion, sourceUrl, ct);
         if (assemblies is null) return Error($"Package {packageId} {resolvedVersion} not found.");
 
         IReadOnlyList<CoreMemberDescriptor> members;
@@ -185,18 +193,19 @@ static class ScatManTools
     static string Meta() => Serialize(MetaInfoFactory.Create());
 
     static async Task<IReadOnlyList<string>?> FetchAssembliesAsync(
-        string packageId, string version, CancellationToken ct)
+        string packageId, string version, string sourceUrl, CancellationToken ct)
     {
-        try   { return await new PackageDownloader().DownloadAsync(packageId, version, ct); }
+        try   { return await new PackageDownloader(sourceUrl: sourceUrl).DownloadAsync(packageId, version, ct); }
         catch { return null; }
     }
 
     static async Task<string> ResolveVersionAsync(
         string packageId,
         string version,
+        string sourceUrl,
         CancellationToken ct)
     {
-        return await PackageVersionResolver.ResolveAsync(packageId, version, ct);
+        return await PackageVersionResolver.ResolveAsync(packageId, version, sourceUrl, ct);
     }
 
     static string Serialize(object value) => JsonSerializer.Serialize(value, JsonOptions);

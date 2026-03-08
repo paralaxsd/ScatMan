@@ -14,6 +14,10 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
         [Description("NuGet package ID")]
         public string Package { get; init; } = "";
 
+        [CommandOption("-s|--source")]
+        [Description("Package source name or URL. Defaults to nuget.org.")]
+        public string? Source { get; init; }
+
         [CommandOption("--pre")]
         [Description("Include prerelease versions")]
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
@@ -27,19 +31,20 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
     public override async Task<int> ExecuteAsync(
         CommandContext context, Settings settings, CancellationToken ct)
     {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(settings.Source);
         var client = new NuGetRegistrationClient();
 
         IReadOnlyList<PackageVersionInfo> allVersions = [];
         try
         {
             if (settings.Json)
-                allVersions = await client.GetVersionsAsync(settings.Package, ct);
+                allVersions = await client.GetVersionsAsync(settings.Package, sourceUrl, ct);
             else
                 await AnsiConsole.Status()
                     .Spinner(Spinner.Known.Dots)
                     .StartAsync(
                         $"Fetching versions for [bold]{settings.Package}[/]...",
-                        async _ => allVersions = await client.GetVersionsAsync(settings.Package, ct));
+                        async _ => allVersions = await client.GetVersionsAsync(settings.Package, sourceUrl, ct));
         }
         catch (PackageNotFoundException ex)
         {

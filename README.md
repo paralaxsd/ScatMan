@@ -182,6 +182,61 @@ NAudio.CoreAudioApi.WasapiCapture — 4 public constructor(s)
 
 ---
 
+### `sources` — list configured package sources
+
+```bash
+scatman sources
+```
+
+Lists all enabled package sources from your `nuget.config` hierarchy (project → user → machine).
+
+```
+Configured Package Sources
+
+Name                               URL
+nuget.org                          https://api.nuget.org/v3/index.json
+internal-nexus                     https://nexus.company.com/nuget/v3/index.json
+```
+
+Use source names or URLs with the `--source` option (see below).
+
+---
+
+## Package Sources
+
+All commands support a `--source` option to specify which NuGet package source to use:
+
+```bash
+scatman types <package> <version> --source <sourceNameOrUrl>
+scatman versions <package> --source <sourceNameOrUrl>
+scatman members <package> <version> <type> --source <sourceNameOrUrl>
+scatman search <package> <version> <query> --source <sourceNameOrUrl>
+scatman ctors <package> <version> <type> --source <sourceNameOrUrl>
+```
+
+`<sourceNameOrUrl>` can be:
+- A **source name** from `scatman sources` — e.g. `nuget.org`, `internal-nexus`
+- A **full V3 NuGet index URL** — e.g. `https://api.nuget.org/v3/index.json`
+
+If `--source` is omitted, defaults to `nuget.org`.
+
+Examples:
+```bash
+# Use a named source from nuget.config
+scatman types NAudio.Wasapi 2.2.1 --source internal-nexus
+
+# Use a URL directly
+scatman versions Newtonsoft.Json --source https://myget.org/F/myorg/api/v3/index.json
+
+# Resolve "latest" from a custom source
+scatman types Newtonsoft.Json latest --source internal-nexus
+```
+
+> **Note:** Your system's `nuget.config` file must be properly configured with authentication for private sources.
+> The `--source` option respects the same credentials and settings that `dotnet` CLI tools use.
+
+---
+
 All commands support `--json` for machine-readable output.
 Packages and their transitive dependencies are cached in `~/.scatman/cache/` after the first download.
 
@@ -221,13 +276,16 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 
 | Tool | Description |
 |---|---|
-| `get_versions` | List available versions of a package (`packageId`, `includePrerelease?`) |
-| `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`) |
-| `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`) |
-| `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`, `kind?`) |
+| `get_versions` | List available versions of a package (`packageId`, `includePrerelease?`, `source?`) |
+| `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`, `source?`) |
+| `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`, `source?`) |
+| `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`, `kind?`, `source?`) |
 
-For MCP tools using a `version` parameter, aliases are supported as well:
-`latest` (latest stable, fallback latest if no stable exists) and `latest-pre`.
+**Version aliases:** For tools with a `version` parameter, aliases are supported:
+`latest` (latest stable, fallback to latest if no stable exists) and `latest-pre`.
+
+**Package sources:** All tools support an optional `source` parameter (source name or URL) to query from custom NuGet sources.
+If omitted, defaults to nuget.org. See [Package Sources](#package-sources) section above.
 
 For MCP tools with `ns`, `filter`, or `query`, glob syntax follows
 `Microsoft.Extensions.FileSystemGlobbing` (`*`, `?`, `**`, exact names, `/`). Character classes `[abc]` and alternation `{foo,bar}` are not supported.

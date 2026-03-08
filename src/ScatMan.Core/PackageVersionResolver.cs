@@ -8,13 +8,14 @@ public static class PackageVersionResolver
     public static async Task<string> ResolveAsync(
         string packageId,
         string requestedVersion,
+        string? sourceUrl = null,
         CancellationToken ct = default)
     {
         if (!requestedVersion.Equals("latest", StringComparison.OrdinalIgnoreCase) &&
             !requestedVersion.Equals("latest-pre", StringComparison.OrdinalIgnoreCase))
             return requestedVersion;
 
-        var versions = await new NuGetRegistrationClient().GetVersionsAsync(packageId, ct);
+        var versions = await new NuGetRegistrationClient().GetVersionsAsync(packageId, sourceUrl, ct);
         if (versions.Count == 0)
             throw new PackageNotFoundException(packageId);
 
