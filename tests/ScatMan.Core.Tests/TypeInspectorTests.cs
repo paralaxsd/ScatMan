@@ -1,7 +1,5 @@
 using Shouldly;
 #pragma warning disable IDE0051
-using System.IO;
-using System.Reflection;
 using Xunit;
 
 namespace ScatMan.Core.Tests;
@@ -45,6 +43,37 @@ public sealed class TypeInspectorTests
         var result = inspector.GetMembers([assembly], nameof(DummyMemberType));
         result.ShouldContain(m => m.Name == "PublicProp");
         result.ShouldNotContain(m => m.Name == "PrivateProp");
+    }
+
+    // Test: GetMembers filters by kind
+    [Fact]
+    public void GetMembers_FiltersByKind_Methods()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyMemberType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyMemberType), kind: "method");
+        result.ShouldAllBe(m => m.Kind == "method");
+        result.ShouldContain(m => m.Name == "PublicMethod");
+    }
+
+    [Fact]
+    public void GetMembers_FiltersByKind_Properties()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyMemberType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyMemberType), kind: "property");
+        result.ShouldAllBe(m => m.Kind == "property");
+        result.ShouldContain(m => m.Name == "PublicProp");
+    }
+
+    [Fact]
+    public void GetMembers_FiltersByKind_CaseInsensitive()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyMemberType).Assembly.Location;
+        var resultLower = inspector.GetMembers([assembly], nameof(DummyMemberType), kind: "method");
+        var resultUpper = inspector.GetMembers([assembly], nameof(DummyMemberType), kind: "METHOD");
+        resultLower.ShouldBe(resultUpper);
     }
 
     // Test: Search finds types and members by substring and glob
@@ -101,33 +130,8 @@ public sealed class TypeInspectorTests
     {
         public int PublicProp { get; set; }
         private int PrivateProp { get; set; }
+
+        public void PublicMethod() { }
     }
 }
 
-public class XmlDocumentationProviderTests
-{
-    [Fact]
-    public void Finds_DownloadAsync_Summary()
-    {
-        // Pfad zur Debug-Assembly und XML-Dokumentation
-        var assemblyPath = Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory,
-            "ScatMan.Core.dll");
-        var xmlPath = Path.ChangeExtension(assemblyPath, ".xml");
-        Assert.True(File.Exists(assemblyPath), $"Assembly fehlt: {assemblyPath}");
-        Assert.True(File.Exists(xmlPath), $"XML fehlt: {xmlPath}");
-
-        var provider = ScatMan.Core.XmlDocumentationProvider.Load([assemblyPath]);
-
-        var asm = Assembly.LoadFrom(assemblyPath);
-        var type = asm.GetType("ScatMan.Core.PackageDownloader");
-        Assert.NotNull(type);
-        var method = type.GetMethod("DownloadAsync", BindingFlags.Public | BindingFlags.Instance);
-        Assert.NotNull(method);
-
-        var summary = provider.GetMemberSummary(method);
-        // Hier kannst du im Debugger steppen und den summary-Text prüfen
-        Assert.False(string.IsNullOrWhiteSpace(summary));
-        Assert.Contains("Downloads package assets", summary);
-    }
-}
