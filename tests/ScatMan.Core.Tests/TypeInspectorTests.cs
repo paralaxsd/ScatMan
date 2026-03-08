@@ -156,6 +156,65 @@ public sealed class TypeInspectorTests
         readonlyField.Signature.ShouldContain("readonly");
     }
 
+    // Test: GetMembers includes default values in signatures
+    [Fact]
+    public void GetMembers_IncludesDefaultValues()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyDefaultValuesType).Assembly.Location;
+        var result = inspector.GetMembers(
+            [assembly],
+            nameof(DummyDefaultValuesType),
+            includeDefaultValues: true);
+
+        var methodWithDefaults = result.FirstOrDefault(m => m.Name == "MethodWithDefaults");
+        methodWithDefaults.ShouldNotBeNull();
+        // Signature shows "= default" for CLR default values
+        methodWithDefaults.Signature.ShouldContain("= default");
+    }
+
+    // Test: GetMembers excludes default values when flag is false
+    [Fact]
+    public void GetMembers_ExcludesDefaultValuesWhenDisabled()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyDefaultValuesType).Assembly.Location;
+        var resultWithDefaults = inspector.GetMembers(
+            [assembly],
+            nameof(DummyDefaultValuesType),
+            includeDefaultValues: true);
+        var resultWithoutDefaults = inspector.GetMembers(
+            [assembly],
+            nameof(DummyDefaultValuesType),
+            includeDefaultValues: false);
+
+        var methodWith = resultWithDefaults.FirstOrDefault(m => m.Name == "MethodWithDefaults");
+        var methodWithout = resultWithoutDefaults.FirstOrDefault(m => m.Name == "MethodWithDefaults");
+
+        methodWith.ShouldNotBeNull();
+        methodWithout.ShouldNotBeNull();
+
+        methodWith.Signature.ShouldContain("=");
+        methodWithout.Signature.ShouldNotContain("=");
+    }
+
+    // Test: Constructor default values are included in GetMembers
+    [Fact]
+    public void GetMembers_ShowsConstructorDefaultValues()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyDefaultValuesType).Assembly.Location;
+        var result = inspector.GetMembers(
+            [assembly],
+            nameof(DummyDefaultValuesType),
+            includeDefaultValues: true);
+
+        var ctor = result.FirstOrDefault(m => m.Kind == "constructor" && m.Signature.Contains("="));
+        ctor.ShouldNotBeNull();
+        ctor.Signature.ShouldContain("value");
+        ctor.Signature.ShouldContain("= default");
+    }
+
     // Dummy types for testing
     /// <summary>
     /// Dummy-Typ für Konstruktor-Test
@@ -193,6 +252,19 @@ public sealed class TypeInspectorTests
 
         public static void StaticMethod() { }
         public static int StaticProperty { get; set; }
+    }
+
+    public sealed class DummyDefaultValuesType
+    {
+        /// <summary>
+        /// Constructor with default value parameter
+        /// </summary>
+        public DummyDefaultValuesType(string value = "default") { }
+
+        /// <summary>
+        /// Method with multiple default value parameters
+        /// </summary>
+        public void MethodWithDefaults(int count = 42, string name = "test") { }
     }
 }
 
