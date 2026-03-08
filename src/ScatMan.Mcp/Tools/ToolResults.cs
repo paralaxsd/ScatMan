@@ -29,6 +29,7 @@ sealed record GetMembersResult(
     string TypeName,
     bool IncludeDefaultValues,
     bool IncludeAttributes,
+    string? Kind,
     int Count,
     IReadOnlyList<MemberDetail> Members)
     : PackageRequestedVersionResult(Package, RequestedVersion, Version);

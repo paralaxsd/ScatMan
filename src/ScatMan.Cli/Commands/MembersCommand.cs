@@ -23,6 +23,10 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
         [CommandOption("--include-attributes")]
         [Description("Include member and parameter attributes in signatures")]
         public bool IncludeAttributes { get; init; }
+
+        [CommandOption("--kind")]
+        [Description("Filter by member kind: constructor, method, property, field, event")]
+        public string? Kind { get; init; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
@@ -35,7 +39,8 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
                 assemblies,
                 settings.TypeName,
                 includeDefaultValues: !settings.NoDefaultValues,
-                includeAttributes: settings.IncludeAttributes);
+                includeAttributes: settings.IncludeAttributes,
+                kind: settings.Kind);
 
             if (settings.Json) PrintJson(members, settings, resolvedVersion);
             else PrintFormatted(members, settings);

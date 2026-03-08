@@ -142,6 +142,8 @@ static class ScatManTools
         bool includeDefaultValues = true,
         [Description("Include member and parameter attributes in signatures (default: false)")]
         bool includeAttributes = false,
+        [Description("Optional kind filter: constructor, method, property, field, event")]
+        string? kind = null,
         CancellationToken ct = default)
     {
         string resolvedVersion;
@@ -158,7 +160,8 @@ static class ScatManTools
                 assemblies,
                 typeName,
                 includeDefaultValues,
-                includeAttributes);
+                includeAttributes,
+                kind);
         }
         catch (TypeNotFoundException ex) { return Error(ex.Message); }
 
@@ -169,6 +172,7 @@ static class ScatManTools
             typeName,
             includeDefaultValues,
             includeAttributes,
+            kind,
             members.Count,
             [.. members.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))]);
 

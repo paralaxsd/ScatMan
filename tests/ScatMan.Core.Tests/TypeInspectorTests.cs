@@ -1,5 +1,8 @@
 using Shouldly;
 #pragma warning disable IDE0051
+using System.IO;
+using System.Reflection;
+using Xunit;
 
 namespace ScatMan.Core.Tests;
 
@@ -98,5 +101,33 @@ public sealed class TypeInspectorTests
     {
         public int PublicProp { get; set; }
         private int PrivateProp { get; set; }
+    }
+}
+
+public class XmlDocumentationProviderTests
+{
+    [Fact]
+    public void Finds_DownloadAsync_Summary()
+    {
+        // Pfad zur Debug-Assembly und XML-Dokumentation
+        var assemblyPath = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "ScatMan.Core.dll");
+        var xmlPath = Path.ChangeExtension(assemblyPath, ".xml");
+        Assert.True(File.Exists(assemblyPath), $"Assembly fehlt: {assemblyPath}");
+        Assert.True(File.Exists(xmlPath), $"XML fehlt: {xmlPath}");
+
+        var provider = ScatMan.Core.XmlDocumentationProvider.Load([assemblyPath]);
+
+        var asm = Assembly.LoadFrom(assemblyPath);
+        var type = asm.GetType("ScatMan.Core.PackageDownloader");
+        Assert.NotNull(type);
+        var method = type.GetMethod("DownloadAsync", BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(method);
+
+        var summary = provider.GetMemberSummary(method);
+        // Hier kannst du im Debugger steppen und den summary-Text prüfen
+        Assert.False(string.IsNullOrWhiteSpace(summary));
+        Assert.Contains("Downloads package assets", summary);
     }
 }

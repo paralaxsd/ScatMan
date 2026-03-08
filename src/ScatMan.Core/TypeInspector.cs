@@ -46,6 +46,7 @@ public sealed class TypeInspector
     /// <param name="typeName">Full or simple type name.</param>
     /// <param name="includeDefaultValues">Include default values for optional parameters.</param>
     /// <param name="includeAttributes">Include member and parameter attributes in signatures.</param>
+    /// <param name="kind">Optional kind filter: constructor, method, property, field, event.</param>
     /// <returns>Public members declared on the resolved type.</returns>
     /// <exception cref="TypeNotFoundException">
     /// Thrown when the type cannot be resolved from the provided assemblies.
@@ -54,14 +55,19 @@ public sealed class TypeInspector
         IReadOnlyList<string> assemblyPaths,
         string typeName,
         bool includeDefaultValues = true,
-        bool includeAttributes = false)
+        bool includeAttributes = false,
+        string? kind = null)
     {
         using var inspectionCtxt = new TypeInspectionContext(assemblyPaths);
 
         var type = FindType(inspectionCtxt.LoadCtxt, assemblyPaths, typeName)
             ?? throw new TypeNotFoundException(typeName);
 
-        return GetMembersFromType(type, includeDefaultValues, includeAttributes, inspectionCtxt.DocProvider);
+        var members = GetMembersFromType(type, includeDefaultValues, includeAttributes, inspectionCtxt.DocProvider);
+
+        return kind is null
+            ? members
+            : [.. members.Where(m => m.Kind.Equals(kind, StringComparison.OrdinalIgnoreCase))];
     }
 
     /// <summary>
