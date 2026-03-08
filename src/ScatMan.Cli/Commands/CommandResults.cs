@@ -48,3 +48,19 @@ sealed record CtorsResult(
 sealed record ConstructorResult(IReadOnlyList<ParameterResult> Parameters);
 
 sealed record ParameterResult(string Name, string TypeName);
+
+sealed record DiffResult(
+    string Package,
+    string Version1,
+    string Version2,
+    string? TypeFilter,
+    IReadOnlyList<string> AddedTypes,
+    IReadOnlyList<string> RemovedTypes,
+    IReadOnlyList<DiffTypeResult> ChangedTypes);
+
+sealed record DiffTypeResult(
+    string TypeFullName,
+    IReadOnlyList<DiffMemberResult> Added,
+    IReadOnlyList<DiffMemberResult> Removed);
+
+sealed record DiffMemberResult(string Kind, string Name, string Signature);

@@ -173,6 +173,13 @@ public sealed class TypeInspector
         }
     }
 
+    /// <summary>
+    /// Returns public members of a type using a pre-existing inspection context.
+    /// Intended for callers that manage context lifetime (e.g. ApiDiffer).
+    /// </summary>
+    internal IReadOnlyList<MemberDescriptor> GetMembers(TypeInspectionContext ctx, Type type) =>
+        GetMembersFromType(type, includeDefaultValues: true, includeAttributes: false, ctx.DocProvider);
+
     static bool NamespaceMatches(string? typeNamespace, string? filterNamespace) =>
         PatternFilters.MatchesExactOrGlob(typeNamespace, filterNamespace);
 

@@ -50,3 +50,17 @@ sealed record MappedMember(
     string? Summary);
 
 sealed record MemberDetail(string Kind, string Name, string Signature, string? Summary);
+
+sealed record GetDiffResult(
+    string Package,
+    string Version1,
+    string Version2,
+    string? TypeFilter,
+    IReadOnlyList<string> AddedTypes,
+    IReadOnlyList<string> RemovedTypes,
+    IReadOnlyList<DiffTypeSummary> ChangedTypes);
+
+sealed record DiffTypeSummary(
+    string TypeFullName,
+    IReadOnlyList<MemberDetail> Added,
+    IReadOnlyList<MemberDetail> Removed);

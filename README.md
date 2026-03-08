@@ -182,6 +182,40 @@ NAudio.CoreAudioApi.WasapiCapture — 4 public constructor(s)
 
 ---
 
+### `diff` — compare API between two versions
+
+```bash
+scatman diff <package> <version1> <version2> [--type <typeNameOrFull>]
+```
+
+`<version1>` and `<version2>` also accept aliases: `latest` and `latest-pre`.
+
+`--type` restricts the diff to a single type (full or simple name).
+
+```bash
+scatman diff Serilog 3.1.1 4.0.0
+```
+
+```
+Serilog — 3.1.1 → 4.0.0
+
+Serilog.Core.ILogEventSink
+  + method  void Emit(LogEvent logEvent)
+
+Serilog.Core.IBatchedLogEventSink
+  + method  Task EmitBatchAsync(IEnumerable<LogEvent> batch)
+  + method  Task OnEmptyBatchAsync()
+```
+
+Added types appear as `+ TYPE <FullName>`, removed types as `- TYPE <FullName>`.
+For types present in both versions, added members are shown with `+` and removed members with `-`.
+
+```bash
+scatman diff Serilog 3.1.1 4.0.0 --type LoggerConfiguration
+```
+
+---
+
 ### `sources` — list configured package sources
 
 ```bash
@@ -212,6 +246,7 @@ scatman versions <package> --source <sourceNameOrUrl>
 scatman members <package> <version> <type> --source <sourceNameOrUrl>
 scatman search <package> <version> <query> --source <sourceNameOrUrl>
 scatman ctors <package> <version> <type> --source <sourceNameOrUrl>
+scatman diff <package> <version1> <version2> --source <sourceNameOrUrl>
 ```
 
 `<sourceNameOrUrl>` can be:
@@ -280,6 +315,7 @@ claude mcp add --scope user -t stdio ScatMan scatman-mcp
 | `get_types` | List all public types (`packageId`, `version`, `ns?`, `filter?`, `source?`) |
 | `search` | Search types and members by name (`packageId`, `version`, `query`, `ns?`, `source?`) |
 | `get_members` | List all public members incl. constructors (`packageId`, `version`, `typeName`, `kind?`, `source?`) |
+| `get_diff` | Compare API between two versions — added/removed types and members (`packageId`, `version1`, `version2`, `typeName?`, `source?`) |
 
 **Version aliases:** For tools with a `version` parameter, aliases are supported:
 `latest` (latest stable, fallback to latest if no stable exists) and `latest-pre`.
@@ -302,6 +338,7 @@ For MCP tools with `ns`, `filter`, or `query`, glob syntax follows
 | `members <pkg> <ver> <type>` | List all public members of a type | ✅ done |
 | `search <pkg> <ver> <query>` | Search types and members by name | ✅ done |
 | `serve` | Expose everything as an MCP stdio server | ✅ done (Phase 2) |
+| `diff <pkg> <v1> <v2>` | Detect added/removed types and members between versions | ✅ done |
 
 ---
 

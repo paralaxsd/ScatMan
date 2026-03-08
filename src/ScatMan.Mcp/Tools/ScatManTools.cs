@@ -187,6 +187,51 @@ static class ScatManTools
         return Serialize(result);
     }
 
+    [McpServerTool(Name = "get_diff")]
+    [Description(
+        "Compare the public API of two versions of a NuGet package. " +
+        "Returns added types, removed types, and per-type added/removed members.")]
+    static async Task<string> GetDiff(
+        [Description("NuGet package ID")] string packageId,
+        [Description("First version (or alias: latest / latest-pre)")] string version1,
+        [Description("Second version (or alias: latest / latest-pre)")] string version2,
+        [Description("Restrict diff to a single type (full or simple name)")] string? typeName = null,
+        [Description("Package source name or URL. Defaults to nuget.org.")] string? source = null,
+        CancellationToken ct = default)
+    {
+        var sourceUrl = PackageSourceResolver.ResolveSourceUrl(source);
+
+        string resolved1, resolved2;
+        try
+        {
+            resolved1 = await ResolveVersionAsync(packageId, version1, sourceUrl, ct);
+            resolved2 = await ResolveVersionAsync(packageId, version2, sourceUrl, ct);
+        }
+        catch (PackageNotFoundException ex) { return Error(ex.Message); }
+
+        var assemblies1 = await FetchAssembliesAsync(packageId, resolved1, sourceUrl, ct);
+        if (assemblies1 is null) return Error($"Package {packageId} {resolved1} not found.");
+
+        var assemblies2 = await FetchAssembliesAsync(packageId, resolved2, sourceUrl, ct);
+        if (assemblies2 is null) return Error($"Package {packageId} {resolved2} not found.");
+
+        var diff = new ApiDiffer().Diff(packageId, resolved1, assemblies1, resolved2, assemblies2, typeName);
+
+        var result = new GetDiffResult(
+            packageId,
+            version1,
+            version2,
+            typeName,
+            diff.AddedTypes,
+            diff.RemovedTypes,
+            [.. diff.ChangedTypes.Select(t => new DiffTypeSummary(
+                t.TypeFullName,
+                [.. t.Added.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))],
+                [.. t.Removed.Select(m => new MemberDetail(m.Kind, m.Name, m.Signature, m.Summary))]))]);
+
+        return Serialize(result);
+    }
+
     [McpServerTool(Name = "meta")]
     [Description(
         "Show metadata about the ScatMan MCP tool, including version and build information.")]

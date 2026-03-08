@@ -40,6 +40,11 @@ app.Configure(config =>
     config.AddCommand<SourcesCommand>("sources")
         .WithDescription("List configured NuGet package sources.")
         .WithExample(["sources"]);
+
+    config.AddCommand<DiffCommand>("diff")
+        .WithDescription("Show API differences between two versions of a NuGet package.")
+        .WithExample(["diff", "Serilog", "3.1.1", "4.0.0"])
+        .WithExample(["diff", "Serilog", "3.1.1", "4.0.0", "--type", "LoggerConfiguration"]);
 });
 
 return await app.RunAsync(args);

@@ -55,6 +55,25 @@ public record SearchHits(
     IReadOnlyList<TypeDescriptor> Types, IReadOnlyList<MemberSearchHit> Members);
 
 /// <summary>
+/// Describes members added or removed for a single type between two package versions.
+/// </summary>
+public record TypeDiff(
+    string TypeFullName,
+    IReadOnlyList<MemberDescriptor> Added,
+    IReadOnlyList<MemberDescriptor> Removed);
+
+/// <summary>
+/// Represents the full API difference between two versions of a package.
+/// </summary>
+public record ApiDiff(
+    string Package,
+    string Version1,
+    string Version2,
+    IReadOnlyList<string> AddedTypes,
+    IReadOnlyList<string> RemovedTypes,
+    IReadOnlyList<TypeDiff> ChangedTypes);
+
+/// <summary>
 /// Thrown when a requested type cannot be found in downloaded assemblies.
 /// </summary>
 public sealed class TypeNotFoundException(string typeName)
