@@ -108,6 +108,54 @@ public sealed class TypeInspectorTests
         types.ShouldContain(t => t.Name == "DummyMemberType");
     }
 
+    // Test: GetMembers returns fields with correct formatting
+    [Fact]
+    public void GetMembers_ReturnsFields()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyFieldsAndEventsType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyFieldsAndEventsType));
+        result.ShouldContain(m => m.Kind == "field" && m.Name == "PublicField");
+        result.ShouldContain(m => m.Kind == "field" && m.Name == "StaticReadonlyField");
+    }
+
+    // Test: GetMembers returns events
+    [Fact]
+    public void GetMembers_ReturnsEvents()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyFieldsAndEventsType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyFieldsAndEventsType));
+        result.ShouldContain(m => m.Kind == "event" && m.Name == "MyEvent");
+    }
+
+    // Test: GetMembers includes static modifier in signatures
+    [Fact]
+    public void GetMembers_FormatsStaticModifier()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyFieldsAndEventsType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyFieldsAndEventsType));
+
+        var staticField = result.FirstOrDefault(m => m.Name == "StaticReadonlyField");
+        staticField.ShouldNotBeNull();
+        staticField.Signature.ShouldContain("static");
+        staticField.Signature.ShouldContain("readonly");
+    }
+
+    // Test: GetMembers includes readonly modifier for fields
+    [Fact]
+    public void GetMembers_FormatsReadonlyModifier()
+    {
+        var inspector = new TypeInspector();
+        var assembly = typeof(DummyFieldsAndEventsType).Assembly.Location;
+        var result = inspector.GetMembers([assembly], nameof(DummyFieldsAndEventsType));
+
+        var readonlyField = result.FirstOrDefault(m => m.Name == "StaticReadonlyField");
+        readonlyField.ShouldNotBeNull();
+        readonlyField.Signature.ShouldContain("readonly");
+    }
+
     // Dummy types for testing
     /// <summary>
     /// Dummy-Typ für Konstruktor-Test
@@ -132,6 +180,19 @@ public sealed class TypeInspectorTests
         private int PrivateProp { get; set; }
 
         public void PublicMethod() { }
+    }
+
+    public sealed class DummyFieldsAndEventsType
+    {
+        public int PublicField;
+        public static readonly string StaticReadonlyField = "test";
+
+#pragma warning disable CS0067
+        public event EventHandler? MyEvent;
+#pragma warning restore CS0067
+
+        public static void StaticMethod() { }
+        public static int StaticProperty { get; set; }
     }
 }
 
