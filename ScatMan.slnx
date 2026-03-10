@@ -4,6 +4,7 @@
     <File Path="build.cmd" />
     <File Path="build.ps1" />
     <File Path="build.sh" />
+    <File Path="CHANGELOG.md" />
     <File Path="Claude.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -11,6 +12,11 @@
     <File Path="nuget.config" />
     <File Path="README.md" />
     <File Path="version.json" />
+  </Folder>
+  <Folder Name="/0 Solution Items/.claude/" />
+  <Folder Name="/0 Solution Items/.claude/commands/">
+    <File Path=".claude/commands/commit.md" />
+    <File Path=".claude/commands/release.md" />
   </Folder>
   <Folder Name="/0 Solution Items/.github/">
     <File Path=".github/copilot-instructions.md" />

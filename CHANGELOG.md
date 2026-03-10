@@ -1,13 +1,21 @@
-
-# [0.1.52] – 2026-03-10
-
-- Added global.json for Dependabot compatibility
-- Documented Solution Items rule for non-source files in CLAUDE.md and copilot-instructions.md
-
 # Changelog
 
 All notable changes to this project will be documented in this file.
 This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [0.1.52] – 2026-03-10
+
+### Added
+- Added `global.json` for Dependabot compatibility
+- Documented Solution Items rule for non-source files in `CLAUDE.md` and `copilot-instructions.md`
+
+## [v0.1.50] – 2026-03-10
+
+### Added
+- Release skill for automated release workflow
+
+### Changed
+- Extended metadata: NuGet package name in MetaInfo, CLI and MCP output
 
 ## [v0.1.48] – 2026-03-08
 
