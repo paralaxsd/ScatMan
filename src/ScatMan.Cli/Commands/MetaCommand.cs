@@ -17,7 +17,7 @@ public sealed class MetaCommand : Command<MetaCommand.Settings>
 
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        var metaInfo = MetaInfoFactory.Create();
+        var metaInfo = MetaInfoFactory.Create("ScatMan.Cli");
 
         if (settings.Json)
         {
@@ -29,6 +29,7 @@ public sealed class MetaCommand : Command<MetaCommand.Settings>
             var table = new Table().Border(TableBorder.Rounded);
             table.AddColumn("Property").AddColumn("Value");
 
+            table.AddRow("NuGet Package", metaInfo.NugetPackageName);
             table.AddRow("Version", metaInfo.Version);
             table.AddRow("Configuration", metaInfo.Configuration);
             table.AddRow("Commit Date", metaInfo.CommitDate.ToLocalTime().ToString(CultureInfo.CurrentCulture));

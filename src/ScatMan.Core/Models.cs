@@ -97,5 +97,6 @@ public sealed class PackageNotFoundException(string packageId)
 /// Build and runtime metadata for CLI and MCP diagnostics.
 /// </summary>
 public record MetaInfo(
+    string NugetPackageName,
     string Version, string Configuration, DateTime CommitDate,
     bool IsPublic, string OS, string DotNetVersion);

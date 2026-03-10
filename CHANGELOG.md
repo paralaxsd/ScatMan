@@ -1,3 +1,7 @@
+# [0.1.49] – 2024-06-11
+- docs: Release-Workflow-Dokument für automatisierte Releases hinzugefügt
+- core/cli/mcp: MetaInfo um nugetPackageName erweitert, CLI und MCP geben das Feld aus
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
