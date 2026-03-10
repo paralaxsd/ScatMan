@@ -17,5 +17,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `builder.Logging.ClearProviders()` is required in Program.cs — default console logger writes to stdout and corrupts the JSON-RPC channel
 - Register with `claude mcp add --scope user` — the VS Code extension's claude.exe subprocess only reads top-level `mcpServers`, not project-scoped entries
 
+## Solution Explorer
+
+Non-source files (e.g. global.json) outside the project structure should appear in Solution Explorer under 'Solution Items'.
+
 ## Git
 - **No conventional commits** — no `feat:`, `fix:`, `chore:` prefixes. Plain imperative subject line, capitalize first word.

@@ -1,6 +1,8 @@
-# [0.1.49] – 2024-06-11
-- docs: Release-Workflow-Dokument für automatisierte Releases hinzugefügt
-- core/cli/mcp: MetaInfo um nugetPackageName erweitert, CLI und MCP geben das Feld aus
+
+# [0.1.52] – 2026-03-10
+
+- Added global.json for Dependabot compatibility
+- Documented Solution Items rule for non-source files in CLAUDE.md and copilot-instructions.md
 
 # Changelog
 

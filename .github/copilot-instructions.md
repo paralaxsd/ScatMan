@@ -17,4 +17,6 @@ Remember my personal C# style. For other languages the same principles apply.
 - Use utility methods and extensions we already have in our code base wherever possible.
 - Use strategic blank lines to visually separate logical blocks, error handling, initializations, and return statements. This helps to further improve code readability and makes the structure of methods easier to grasp at a glance.
 - In principle SOLID, DRY and YAGNI make a lot of sense.
-- For git commit titles, do not use prefixes like feat/fix/chore. Use plain, descriptive titles.
+
+Non-source files (e.g. global.json) outside the project structure should appear in Solution Explorer under 'Solution Items'.
+For git commit titles, do not use prefixes like feat/fix/chore. Use plain, descriptive titles.
