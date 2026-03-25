@@ -8,7 +8,13 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Logging.ClearProviders();
 
 builder.Services
-    .AddMcpServer()
+    .AddMcpServer(options => {
+        options.ServerInfo = new()
+        {
+            Name = "ScatMan - NuGet API Explorer", 
+            Version = ThisAssembly.AssemblyInformationalVersion
+        };
+    })
     .WithStdioServerTransport()
     .WithToolsFromAssembly(typeof(ScatManTools).Assembly);
 

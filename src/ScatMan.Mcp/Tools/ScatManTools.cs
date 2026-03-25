@@ -3,6 +3,7 @@ using System.Text.Json;
 using ModelContextProtocol.Server;
 using ScatMan.Core;
 using CoreMemberDescriptor = ScatMan.Core.MemberDescriptor;
+// ReSharper disable UnusedMember.Local
 
 namespace ScatMan.Mcp.Tools;
 
