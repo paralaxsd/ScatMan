@@ -19,7 +19,7 @@
     <!-- ScatMan.Build -->
     <PackageVersion Include="Nuke.Common" Version="10.1.0" />
     <!-- ScatMan.Core.Tests -->
-    <PackageVersion Include="coverlet.collector" Version="8.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="8.0.1" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
