@@ -29,7 +29,7 @@ sealed class MembersCommand : AsyncCommand<MembersCommand.Settings>
         public string? Kind { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
 

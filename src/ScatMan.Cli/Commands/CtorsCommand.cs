@@ -1,9 +1,8 @@
-using System.ComponentModel;
-using System.Text.Json;
-using ScatMan.Cli;
 using ScatMan.Core;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace ScatMan.Cli.Commands;
 
@@ -16,7 +15,7 @@ sealed class CtorsCommand : AsyncCommand<CtorsCommand.Settings>
         public string TypeName { get; init; } = "";
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
 

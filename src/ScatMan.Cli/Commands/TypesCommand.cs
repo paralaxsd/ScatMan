@@ -21,7 +21,7 @@ sealed class TypesCommand : AsyncCommand<TypesCommand.Settings>
         public string? Filter { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
         var types = new TypeInspector().GetTypes(assemblies, settings.Namespace);
