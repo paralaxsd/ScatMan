@@ -7,7 +7,7 @@ namespace ScatMan.Cli.Commands;
 
 sealed class SourcesCommand : AsyncCommand<BaseSettings>
 {
-    public override async Task<int> ExecuteAsync(CommandContext context, BaseSettings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, BaseSettings settings, CancellationToken ct)
     {
         var sources = PackageSourceResolver.GetSources();
 

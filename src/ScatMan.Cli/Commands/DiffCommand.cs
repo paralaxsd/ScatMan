@@ -32,7 +32,7 @@ sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         public string? Source { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var sourceUrl = PackageSourceResolver.ResolveSourceUrl(settings.Source);
         var downloader = new PackageDownloader(sourceUrl: sourceUrl);

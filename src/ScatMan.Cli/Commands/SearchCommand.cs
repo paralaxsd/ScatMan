@@ -20,7 +20,7 @@ sealed class SearchCommand : AsyncCommand<SearchCommand.Settings>
         public string? Namespace { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
+    protected override async Task<int> ExecuteAsync(CommandContext context, Settings settings, CancellationToken ct)
     {
         var (assemblies, resolvedVersion) = await settings.FetchAssembliesAsync(ct);
         var hits       = new TypeInspector().Search(assemblies, settings.Query, settings.Namespace);

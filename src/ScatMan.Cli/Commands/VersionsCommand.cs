@@ -28,7 +28,7 @@ sealed class VersionsCommand : AsyncCommand<VersionsCommand.Settings>
         public int? Head { get; init; }
     }
 
-    public override async Task<int> ExecuteAsync(
+    protected override async Task<int> ExecuteAsync(
         CommandContext context, Settings settings, CancellationToken ct)
     {
         var sourceUrl = PackageSourceResolver.ResolveSourceUrl(settings.Source);
