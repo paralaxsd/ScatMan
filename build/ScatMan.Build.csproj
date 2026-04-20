@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Nuke.Common" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" VersionOverride="10.0.6" />
   </ItemGroup>
 
 </Project>
