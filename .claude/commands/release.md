@@ -15,10 +15,12 @@ Follow these steps exactly — do NOT skip ahead:
    - If user passed preferences, apply them (additional notes, highlights, which commits to include/exclude)
 7. Propose a commit message (imperative, short summary of release).
 8. **STOP. Wait for explicit user approval** ("release", "yes", "ok", etc.) before proceeding.
-9. Only after approval:
-   - Create the commit with the proposed message.
-   - Run `nbgv tag` to automatically assign version and create annotated tag.
-   - Update CHANGELOG.md with the proposed entry at the top.
-   - Run `git add CHANGELOG.md` and `git commit --amend` to add changelog to the same commit.
+9. Only after approval, execute **in order**:
+   - Ensure `version.json` has `"buildNumberOffset": -1` (required for correct vX.Y.0 tagging, see https://github.com/dotnet/Nerdbank.GitVersioning/issues/102)
+   - Update `version.json` (if needed) and CHANGELOG.md **together** with the proposed entry at the top
+   - Create **ONE clean commit** with both files: `git add version.json CHANGELOG.md && git commit -m "..."`
+   - Run `nbgv tag` to automatically assign version and create annotated tag
+   - After tag created: update `version.json` to next planned version (e.g., if releasing v1.0.0, bump to "1.1" for next cycle to prevent version locking)
 10. **Never push** unless the user explicitly says so.
 11. **Never use `--no-verify`** or skip hooks.
+12. **Never use `git commit --amend`** for releases — it changes commit hashes and confuses nbgv's version calculation.
