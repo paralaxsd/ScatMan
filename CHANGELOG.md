@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.0] – 2026-05-04
+
+### Added
+- Server meta information endpoint (MCP)
+- Daily automated NuGet package version checks
+
+### Fixed
+- Build compatibility with Spectre.Console.Cli 0.55.0
+
+### Dependencies
+- Updated to .NET 10.0.203 SDK
+- Updated numerous package dependencies for compatibility
+
+---
+
 ## [0.1.52] – 2026-03-10
 
 ### Added

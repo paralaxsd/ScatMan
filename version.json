@@ -1,6 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
-  "version": "0.1",
+  "version": "1.0",
+  // Yes, we *really* want to ship our release with revision 0! 
+  // https: //github.com/dotnet/Nerdbank.GitVersioning/issues/102#issuecomment-269591960
+  "buildNumberOffset": -1,
   "publicReleaseRefSpec": [
     "^refs/heads/main$",
     "^refs/heads/v\\d+(?:\\.\\d+)?$",
