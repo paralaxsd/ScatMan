@@ -10,7 +10,7 @@
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.9.50" />
     <PackageVersion Include="NuGet.Packaging" Version="7.6.0" />
     <PackageVersion Include="NuGet.Protocol" Version="7.6.0" />
-    <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="10.0.7" />
+    <PackageVersion Include="System.Reflection.MetadataLoadContext" Version="10.0.8" />
     <!-- ScatMan.Cli -->
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
     <!-- ScatMan.Mcp -->
