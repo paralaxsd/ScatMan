@@ -6,7 +6,7 @@
     <!-- ScatMan.Core -->
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.301" />
     <PackageVersion Include="Nerdbank.GitVersioning" Version="3.10.85" />
     <PackageVersion Include="NuGet.Packaging" Version="7.6.0" />
     <PackageVersion Include="NuGet.Protocol" Version="7.6.0" />
