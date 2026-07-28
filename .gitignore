@@ -4,3 +4,4 @@ obj/
 *.user
 .nuke/temp
 coverage
+.fallout/temp

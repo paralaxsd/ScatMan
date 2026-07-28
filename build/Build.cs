@@ -1,14 +1,14 @@
-using Nuke.Common;
-using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.IO;
-using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
-using Nuke.Common.Tools.DotNet;
+using Fallout.Common;
+using Fallout.Common.CI.GitHubActions;
+using Fallout.Common.IO;
+using Fallout.Common.Tooling;
+using Fallout.Common.Tools.DotNet;
 using Serilog;
 using System;
 using System.IO;
 using System.Linq;
-using static Nuke.Common.Tools.DotNet.DotNetTasks;
+using Fallout.Solutions;
+using static Fallout.Common.Tools.DotNet.DotNetTasks;
 // ReSharper disable UnusedMember.Local
 // ReSharper disable AllUnderscoreLocalParameterName
 
@@ -16,8 +16,8 @@ using static Nuke.Common.Tools.DotNet.DotNetTasks;
     GitHubActionsImage.UbuntuLatest,
     On = [GitHubActionsTrigger.Push, GitHubActionsTrigger.WorkflowDispatch],
     FetchDepth = 0,  // full history required for Nerdbank.GitVersioning
-    InvokedTargets = [nameof(Test)])]
-class Build : NukeBuild
+    InvokedTargets = [nameof(Test)], CacheKeyFiles = [])]
+class Build : FalloutBuild
 {
     /******************************************************************************************
      * FIELDS
@@ -28,16 +28,16 @@ class Build : NukeBuild
     [Parameter("NuGet API key for publishing"), Secret]
     readonly string? NuGetApiKey;
 
-    [Solution("ScatMan.slnx")] readonly Solution Solution = null!;
+    [Solution("ScatMan.slnx", GenerateProjects = true)] readonly Solution Solution = null!;
 
     /******************************************************************************************
      * PROPERTIES
      * ***************************************************************************************/
     AbsolutePath ArtifactsDir => RootDirectory / "artifacts";
-    AbsolutePath CliProject    => RootDirectory / "src" / "ScatMan.Cli" / "ScatMan.Cli.csproj";
-    AbsolutePath McpProject    => RootDirectory / "src" / "ScatMan.Mcp" / "ScatMan.Mcp.csproj";
-    AbsolutePath CoreProject => RootDirectory / "src" / "ScatMan.Core" / "ScatMan.Core.csproj";
     AbsolutePath CoverageDir => RootDirectory / "coverage";
+    AbsolutePath CliProject    => Solution._1_src.ScatMan_Cli.Path;
+    AbsolutePath McpProject    => Solution._1_src.ScatMan_Mcp.Path;
+    AbsolutePath CoreProject => Solution._1_src.ScatMan_Core.Path;
 
     Target Clean => _ => _
         .Before(Restore)
