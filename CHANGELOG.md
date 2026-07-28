@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.1] – 2026-07-28
+
+### Changed
+- Migrated build system from Nuke to Fallout
+
+### Dependencies
+- Updated ModelContextProtocol, Nerdbank.GitVersioning,
+  System.Reflection.MetadataLoadContext, Microsoft.Extensions.*,
+  Microsoft.NET.Test.Sdk, Microsoft.SourceLink.GitHub,
+  GitHubActionsTestLogger, coverlet.collector, NuGet.Packaging/Protocol
+- Updated to .NET 10.0.302 SDK
+
+---
+
 ## [1.0.0] – 2026-05-04
 
 ### Added
