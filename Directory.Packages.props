@@ -14,7 +14,7 @@
     <!-- ScatMan.Cli -->
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
     <!-- ScatMan.Mcp -->
-    <PackageVersion Include="ModelContextProtocol" Version="2.0.0" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.1.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
     <!-- ScatMan.Build -->
     <PackageVersion Include="Fallout.Common" Version="10.4.0-rc.5" />
