@@ -4,7 +4,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>preview</LangVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!--Ideally we'd switch this to one but transitive dependencies can prevent us from compiling.-->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
   <!-- Include root README.md in NuGet packages -->
   <ItemGroup>
